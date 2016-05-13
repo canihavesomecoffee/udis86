@@ -8648,6 +8648,14 @@
         <opr>M</opr>
     </def>
     </instruction>
+    <instruction>
+        <mnemonic>xsaveopt</mnemonic>
+    <def>
+        <pfx>aso rexw rexr rexx rexb</pfx>
+        <opc>0f ae /reg=6 /mod=!11</opc>
+        <opr>M</opr>
+    </def>
+    </instruction>
 
     <instruction>
         <mnemonic>xsetbv</mnemonic>
