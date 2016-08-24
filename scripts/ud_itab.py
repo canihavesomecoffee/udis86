@@ -1,26 +1,26 @@
 # udis86 - scripts/ud_itab.py
-# 
+#
 # Copyright (c) 2009, 2013 Vivek Thampi
 # All rights reserved.
-# 
-# Redistribution and use in source and binary forms, with or without modification, 
+#
+# Redistribution and use in source and binary forms, with or without modification,
 # are permitted provided that the following conditions are met:
-# 
-#     * Redistributions of source code must retain the above copyright notice, 
+#
+#     * Redistributions of source code must retain the above copyright notice,
 #       this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright notice, 
-#       this list of conditions and the following disclaimer in the documentation 
+#     * Redistributions in binary form must reproduce the above copyright notice,
+#       this list of conditions and the following disclaimer in the documentation
 #       and/or other materials provided with the distribution.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR 
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; 
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
@@ -76,7 +76,7 @@ class UdItabGenerator:
         "Jv"       : [    "OP_J"        , "SZ_V"     ],
         "Jz"       : [    "OP_J"        , "SZ_Z"     ],
         "Jb"       : [    "OP_J"        , "SZ_B"     ],
-        "R"        : [    "OP_R"        , "SZ_RDQ"   ], 
+        "R"        : [    "OP_R"        , "SZ_RDQ"   ],
         "C"        : [    "OP_C"        , "SZ_NA"    ],
         "D"        : [    "OP_D"        , "SZ_NA"    ],
         "S"        : [    "OP_S"        , "SZ_W"     ],
@@ -100,6 +100,7 @@ class UdItabGenerator:
         "Wx"       : [    "OP_W"        , "SZ_X"     ],
         "L"        : [    "OP_L"        , "SZ_O"     ],
         "Lx"       : [    "OP_L"        , "SZ_X"     ],
+        #"MbU"      : [    "OP_MU"       , "SZ_B"
         "MwU"      : [    "OP_MU"       , "SZ_WO"    ],
         "MdU"      : [    "OP_MU"       , "SZ_DO"    ],
         "MqU"      : [    "OP_MU"       , "SZ_QO"    ],
@@ -177,26 +178,26 @@ class UdItabGenerator:
 
     #
     # opcode prefix dictionary
-    # 
-    PrefixDict = { 
-        "rep"      : "P_str",   
-        "repz"     : "P_strz",   
-        "aso"      : "P_aso",   
-        "oso"      : "P_oso",   
-        "rexw"     : "P_rexw", 
-        "rexb"     : "P_rexb",  
-        "rexx"     : "P_rexx",  
+    #
+    PrefixDict = {
+        "rep"      : "P_str",
+        "repz"     : "P_strz",
+        "aso"      : "P_aso",
+        "oso"      : "P_oso",
+        "rexw"     : "P_rexw",
+        "rexb"     : "P_rexb",
+        "rexx"     : "P_rexx",
         "rexr"     : "P_rexr",
         "vexl"     : "P_vexl",
         "vexw"     : "P_vexw",
         "seg"      : "P_seg",
-        "inv64"    : "P_inv64", 
-        "def64"    : "P_def64", 
+        "inv64"    : "P_inv64",
+        "def64"    : "P_def64",
         "cast"     : "P_cast",
     }
 
     MnemonicAliases = ( "invalid", "3dnow", "none", "db", "pause" )
-    
+
     def __init__(self, tables):
         self.tables = tables
         self._insnIndexMap, i = {}, 0
@@ -226,7 +227,7 @@ class UdItabGenerator:
             self.ItabC.write('static ')
         self.ItabC.write( "const uint16_t %s[] = {\n" % self.getTableName(table))
         for i in range(table.size()):
-            if i > 0 and i % 4 == 0: 
+            if i > 0 and i % 4 == 0:
                 self.ItabC.write( "\n" )
             if i % 4 == 0:
                 self.ItabC.write( "  /* %2x */" % i)
@@ -254,7 +255,7 @@ class UdItabGenerator:
             f0 = self.getTableName(table) + ","
             f1 = table.label() + ","
             f2 = "\"%s\"" % table.meta()
-            self.ItabC.write("    /* %03d */ { %s %s %s },\n" % 
+            self.ItabC.write("    /* %03d */ { %s %s %s },\n" %
                              (self.getTableIndex(table), f0, f1, f2))
         self.ItabC.write( "};" )
 
@@ -265,7 +266,7 @@ class UdItabGenerator:
             opr_c = [ "O_NONE", "O_NONE", "O_NONE", "O_NONE" ]
             pfx_c = []
             opr   = insn.operands
-            for i in range(len(opr)): 
+            for i in range(len(opr)):
                 if not (opr[i] in self.OperandDict.keys()):
                     print("error: invalid operand declaration: %s\n" % opr[i])
                 opr_c[i] = "O_" + opr[i]
@@ -284,7 +285,7 @@ class UdItabGenerator:
                         % ( self.getInsnIndex(insn), insn.mnemonic + ',', opr, pfx ) )
         self.ItabC.write( "};\n" )
 
-   
+
     def getMnemonicsList(self):
         mnemonics = self.tables.getMnemonicsList()
         mnemonics.extend(self.MnemonicAliases)
@@ -296,7 +297,7 @@ class UdItabGenerator:
         self.ItabC.write( "const char* ud_mnemonics_str[] = {\n    " )
         self.ItabC.write( ",\n    ".join( [ "\"%s\"" % m for m in mnemonics ] ) )
         self.ItabC.write( "\n};\n" )
- 
+
 
     def genItabH( self, filePath ):
         self.ItabH = open( filePath, "w" )
@@ -326,7 +327,7 @@ class UdItabGenerator:
         self.ItabH.write( "extern const char * ud_mnemonics_str[];\n" )
 
         self.ItabH.write( "\n#endif /* UD_ITAB_H */\n" )
-    
+
         self.ItabH.close()
 
 
@@ -339,7 +340,7 @@ class UdItabGenerator:
         self.ItabC.write("#define GROUP(n) (0x8000 | (n))\n")
         self.ItabC.write("#define INVALID  %d\n\n" % self.getInsnIndex(self.tables.invalidInsn))
 
-        self.genOpcodeTables() 
+        self.genOpcodeTables()
         self.genOpcodeTablesLookupIndex()
 
         #
@@ -370,7 +371,7 @@ def main():
     if len(sys.argv) != 3:
         usage()
         sys.exit(1)
-    
+
     tables = UdOpcodeTables(xml=sys.argv[1])
     itab   = UdItabGenerator(tables)
     itab.genItab(sys.argv[2])
