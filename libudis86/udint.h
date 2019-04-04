@@ -26,8 +26,6 @@
 #ifndef _UDINT_H_
 #define _UDINT_H_
 
-#include "types.h"
-
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif /* HAVE_CONFIG_H */

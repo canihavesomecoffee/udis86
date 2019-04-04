@@ -74,31 +74,95 @@ const char* ud_reg_tab[] =
   "st0",  "st1",  "st2",  "st3",
   "st4",  "st5",  "st6",  "st7", 
 
-  "xmm0", "xmm1", "xmm2", "xmm3",
-  "xmm4", "xmm5", "xmm6", "xmm7",
-  "xmm8", "xmm9", "xmm10", "xmm11",
+  "xmm0",  "xmm1",  "xmm2",  "xmm3",
+  "xmm4",  "xmm5",  "xmm6",  "xmm7",
+  "xmm8",  "xmm9",  "xmm10", "xmm11",
   "xmm12", "xmm13", "xmm14", "xmm15",
+  "xmm16", "xmm17", "xmm18", "xmm19",
+  "xmm20", "xmm21", "xmm22", "xmm23",
+  "xmm24", "xmm25", "xmm26", "xmm27",
+  "xmm28", "xmm29", "xmm30", "xmm31",
 
-  "ymm0", "ymm1", "ymm2",   "ymm3",
-  "ymm4", "ymm5", "ymm6",   "ymm7",
-  "ymm8", "ymm9", "ymm10",  "ymm11",
+  "ymm0",  "ymm1",  "ymm2",  "ymm3",
+  "ymm4",  "ymm5",  "ymm6",  "ymm7",
+  "ymm8",  "ymm9",  "ymm10", "ymm11",
   "ymm12", "ymm13", "ymm14", "ymm15",
+  "ymm16", "ymm17", "ymm18", "ymm19",
+  "ymm20", "ymm21", "ymm22", "ymm23",
+  "ymm24", "ymm25", "ymm26", "ymm27",
+  "ymm28", "ymm29", "ymm30", "ymm31",
+
+  "zmm0",  "zmm1",  "zmm2",  "zmm3",
+  "zmm4",  "zmm5",  "zmm6",  "zmm7",
+  "zmm8",  "zmm9",  "zmm10", "zmm11",
+  "zmm12", "zmm13", "zmm14", "zmm15",
+  "zmm16", "zmm17", "zmm18", "zmm19",
+  "zmm20", "zmm21", "zmm22", "zmm23",
+  "zmm24", "zmm25", "zmm26", "zmm27",
+  "zmm28", "zmm29", "zmm30", "zmm31",
+
+  "k0", "k1", "k2", "k3",
+  "k4", "k5", "k6", "k7",
+
+  "bnd0", "bnd1", "bnd2", "bnd3",
 
   "rip"
 };
 
-
-uint64_t
-ud_syn_rel_target(struct ud *u, struct ud_operand *opr)
+/*
+ * Flag Table - Order Matters (types.h)!
+ *
+ */
+const char* ud_flag_tab[] =
 {
-  const uint64_t trunc_mask = 0xffffffffffffffffull >> (64 - u->opr_mode);
-  switch (opr->size) {
-  case 8 : return (u->pc + opr->lval.sbyte)  & trunc_mask;
-  case 16: return (u->pc + opr->lval.sword)  & trunc_mask;
-  case 32: return (u->pc + opr->lval.sdword) & trunc_mask;
-  default: UD_ASSERT(!"invalid relative offset size.");
-    return 0ull;
-  }
+	"of",
+	"sf",
+	"zf",
+	"af",
+	"pf",
+	"cf",
+	"tf",
+	"if",
+	"df",
+	"nf",
+	"rf",
+	"ac"
+};
+
+uint64_t ud_syn_rel_target(struct ud *u, struct ud_operand *opr)
+{
+	// https://github.com/radare/udis86/commit/968a72a6cb555686b9771ffbdd8aa44019335ab3
+	// https://github.com/radare/udis86/commit/87312274bf0bda13e0629de1681dcf6a5abd0327
+	uint64_t trunc_mask = 0xffffffffffffffffull;
+
+	if( u->dis_mode < 32 )
+		trunc_mask >>= (64 - u->opr_mode);
+
+	switch( opr->size )
+	{
+		case 8:
+		{
+			return (u->pc + opr->lval.sbyte)  & trunc_mask;
+		}
+		case 16:
+		{
+			// https://github.com/radare/udis86/commit/c618b2871b22c3504ca3b5615107e12ec6558ead
+			int delta = (opr->lval.sword & trunc_mask);
+			if( (u->pc + delta) > 0xffff )
+				return (u->pc & 0xf0000) + ((u->pc + delta) & 0xffff);
+
+			return ( u->pc + delta );
+		}
+		case 32:
+		{
+			return (u->pc + opr->lval.sdword) & trunc_mask;
+		}
+		default:
+		{
+			UD_ASSERT( !"invalid relative offset size." );
+			return 0ull;
+		}
+	}
 }
 
 

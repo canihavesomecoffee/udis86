@@ -31,6 +31,10 @@ class UdItabGenerator:
 
     OperandDict = {
         "Av"       : [    "OP_A"        , "SZ_V"     ],
+        "B"        : [    "OP_B"        , "SZ_DQ"    ],
+        "BM"       : [    "OP_BM"       , "SZ_DQ"    ],
+        "BMqR"     : [    "OP_BMR"      , "SZ_QO"    ],
+        "BMdqR"    : [    "OP_BMR"      , "SZ_DQO"   ],
         "E"        : [    "OP_E"        , "SZ_NA"    ],
         "Eb"       : [    "OP_E"        , "SZ_B"     ],
         "Ew"       : [    "OP_E"        , "SZ_W"     ],
@@ -39,6 +43,7 @@ class UdItabGenerator:
         "Ey"       : [    "OP_E"        , "SZ_Y"     ],
         "Eq"       : [    "OP_E"        , "SZ_Q"     ],
         "Ez"       : [    "OP_E"        , "SZ_Z"     ],
+        "Erdq"     : [    "OP_E"        , "SZ_RDQ"   ],
         "Fv"       : [    "OP_F"        , "SZ_V"     ],
         "G"        : [    "OP_G"        , "SZ_NA"    ],
         "Gb"       : [    "OP_G"        , "SZ_B"     ],
@@ -55,7 +60,10 @@ class UdItabGenerator:
         "Md"       : [    "OP_M"        , "SZ_D"     ],
         "Mq"       : [    "OP_M"        , "SZ_Q"     ],
         "Mdq"      : [    "OP_M"        , "SZ_DQ"    ],
+        "Mqq"      : [    "OP_M"        , "SZ_QQ"    ],
+        "Mrdq"     : [    "OP_M"        , "SZ_RDQ"   ],
         "Mv"       : [    "OP_M"        , "SZ_V"     ],
+        "Mx"       : [    "OP_M"        , "SZ_X"     ],
         "Mt"       : [    "OP_M"        , "SZ_T"     ],
         "Mo"       : [    "OP_M"        , "SZ_O"     ],
         "MbRd"     : [    "OP_MR"       , "SZ_BD"    ],
@@ -64,9 +72,22 @@ class UdItabGenerator:
         "MwRd"     : [    "OP_MR"       , "SZ_WD"    ],
         "MwRy"     : [    "OP_MR"       , "SZ_WY"    ],
         "MdRy"     : [    "OP_MR"       , "SZ_DY"    ],
+        "Kb"       : [    "OP_K"        , "SZ_B"     ],
+        "Kw"       : [    "OP_K"        , "SZ_W"     ],
+        "Kd"       : [    "OP_K"        , "SZ_D"     ],
+        "Kq"       : [    "OP_K"        , "SZ_Q"     ],
+        "KMb"      : [    "OP_KM"       , "SZ_B"     ],
+        "KMw"      : [    "OP_KM"       , "SZ_W"     ],
+        "KMd"      : [    "OP_KM"       , "SZ_D"     ],
+        "KMq"      : [    "OP_KM"       , "SZ_Q"     ],
+        "KHb"      : [    "OP_KH"       , "SZ_B"     ],
+        "KHw"      : [    "OP_KH"       , "SZ_W"     ],
+        "KHd"      : [    "OP_KH"       , "SZ_D"     ],
+        "KHq"      : [    "OP_KH"       , "SZ_Q"     ],
         "I1"       : [    "OP_I1"       , "SZ_NA"    ],
         "I3"       : [    "OP_I3"       , "SZ_NA"    ],
         "Ib"       : [    "OP_I"        , "SZ_B"     ],
+        "Id"       : [    "OP_I"        , "SZ_D"     ],
         "Iw"       : [    "OP_I"        , "SZ_W"     ],
         "Iv"       : [    "OP_I"        , "SZ_V"     ],
         "Iz"       : [    "OP_I"        , "SZ_Z"     ],
@@ -77,6 +98,7 @@ class UdItabGenerator:
         "Jz"       : [    "OP_J"        , "SZ_Z"     ],
         "Jb"       : [    "OP_J"        , "SZ_B"     ],
         "R"        : [    "OP_R"        , "SZ_RDQ"   ], 
+        "Rv"       : [    "OP_R"        , "SZ_V"     ], 
         "C"        : [    "OP_C"        , "SZ_NA"    ],
         "D"        : [    "OP_D"        , "SZ_NA"    ],
         "S"        : [    "OP_S"        , "SZ_W"     ],
@@ -90,8 +112,12 @@ class UdItabGenerator:
         "Vqq"      : [    "OP_V"        , "SZ_QQ"    ],
         "Vsd"      : [    "OP_V"        , "SZ_Q"     ],
         "Vx"       : [    "OP_V"        , "SZ_X"     ],
+        "HRv"      : [    "OP_HR"       , "SZ_V"     ],
+        "HRd"      : [    "OP_HR"       , "SZ_D"     ],
+        "HRq"      : [    "OP_HR"       , "SZ_Q"     ],
         "H"        : [    "OP_H"        , "SZ_X"     ],
         "Hx"       : [    "OP_H"        , "SZ_X"     ],
+        "Hdq"      : [    "OP_H"        , "SZ_DQ"    ],
         "Hqq"      : [    "OP_H"        , "SZ_QQ"    ],
         "W"        : [    "OP_W"        , "SZ_DQ"    ],
         "Wdq"      : [    "OP_W"        , "SZ_DQ"    ],
@@ -100,9 +126,20 @@ class UdItabGenerator:
         "Wx"       : [    "OP_W"        , "SZ_X"     ],
         "L"        : [    "OP_L"        , "SZ_O"     ],
         "Lx"       : [    "OP_L"        , "SZ_X"     ],
+        "Ldq"      : [    "OP_L"        , "SZ_DQ"    ],
+        "Lqq"      : [    "OP_L"        , "SZ_QQ"    ],
+        "MbU"      : [    "OP_MU"       , "SZ_BO"    ],
         "MwU"      : [    "OP_MU"       , "SZ_WO"    ],
         "MdU"      : [    "OP_MU"       , "SZ_DO"    ],
         "MqU"      : [    "OP_MU"       , "SZ_QO"    ],
+        "MdqU"     : [    "OP_MU"       , "SZ_DQO"   ],
+        "MqqU"     : [    "OP_MU"       , "SZ_QQO"   ],
+        "XSd"      : [    "OP_XS"       , "SZ_D"     ],
+        "XSq"      : [    "OP_XS"       , "SZ_Q"     ],
+        "XSXd"     : [    "OP_XSX"      , "SZ_D"     ],
+        "XSXq"     : [    "OP_XSX"      , "SZ_Q"     ],
+        "XSYd"     : [    "OP_XSY"      , "SZ_D"     ],
+        "XSYq"     : [    "OP_XSY"      , "SZ_Q"     ],
         "N"        : [    "OP_N"        , "SZ_Q"     ],
         "P"        : [    "OP_P"        , "SZ_Q"     ],
         "Q"        : [    "OP_Q"        , "SZ_Q"     ],
@@ -172,9 +209,18 @@ class UdItabGenerator:
         "ST5"      : [    "OP_ST5"      , "SZ_NA"    ],
         "ST6"      : [    "OP_ST6"      , "SZ_NA"    ],
         "ST7"      : [    "OP_ST7"      , "SZ_NA"    ],
+        "IMP_XMM0" : [    "OP_IMP_XMM0" , "SZ_NA"    ],
         "NONE"     : [    "OP_NONE"     , "SZ_NA"    ],
     }
 
+    AccessDict = {
+        "N"  : "UD_ACCESS_NONE",   
+        "R"  : "UD_ACCESS_READ", 
+        "W"  : "UD_ACCESS_WRITE", 
+        "RW" : "UD_ACCESS_READ|UD_ACCESS_WRITE", 
+        "WR" : "UD_ACCESS_READ|UD_ACCESS_WRITE", 
+    }
+    
     #
     # opcode prefix dictionary
     # 
@@ -263,15 +309,23 @@ class UdItabGenerator:
         self.ItabC.write( "struct ud_itab_entry ud_itab[] = {\n" );
         for insn in self.tables.getInsnList():
             opr_c = [ "O_NONE", "O_NONE", "O_NONE", "O_NONE" ]
+            acc_c = [ "UD_ACCESS_NONE", "UD_ACCESS_NONE", "UD_ACCESS_NONE", "UD_ACCESS_NONE" ]
             pfx_c = []
+            
             opr   = insn.operands
             for i in range(len(opr)): 
                 if not (opr[i] in self.OperandDict.keys()):
                     print("error: invalid operand declaration: %s\n" % opr[i])
                 opr_c[i] = "O_" + opr[i]
-            opr = "%s %s %s %s" % (opr_c[0] + ",", opr_c[1] + ",",
-                                   opr_c[2] + ",", opr_c[3])
-
+            opr = "%s %s %s %s" % ( opr_c[0] + ",", opr_c[1] + ",", opr_c[2] + ",", opr_c[3] )
+            
+            acc   = insn.access
+            for i in range(len(acc)): 
+                if not (acc[i] in self.AccessDict.keys()):
+                    print("error: invalid operand declaration: %s\n" % acc[i])
+                acc_c[i] = self.AccessDict[acc[i]]
+            acc = "%s, %s, %s, %s" % ( acc_c[0], acc_c[1], acc_c[2], acc_c[3] )
+            
             for p in insn.prefixes:
                 if not ( p in self.PrefixDict.keys() ):
                     print("error: invalid prefix specification: %s \n" % pfx)
@@ -279,9 +333,21 @@ class UdItabGenerator:
             if len(insn.prefixes) == 0:
                 pfx_c.append( "P_none" )
             pfx = "|".join( pfx_c )
+            
+            flag_map = {
+                '_': 'UD_FLAG_UNCHANGED',
+                'T': 'UD_FLAG_TESTED',
+                'M': 'UD_FLAG_MODIFIED',
+                'R': 'UD_FLAG_RESET',
+                'S': 'UD_FLAG_SET',
+                'U': 'UD_FLAG_UNDEFINED',
+                'P': 'UD_FLAG_PRIOR'
+            }
+            
+            flags = ", ".join(map(lambda f: flag_map[f], [flag for flag in insn.flags]))
 
-            self.ItabC.write( "  /* %04d */ { UD_I%s %s, %s },\n" \
-                        % ( self.getInsnIndex(insn), insn.mnemonic + ',', opr, pfx ) )
+            self.ItabC.write( "  /* %04d */ { UD_I%s %s, %s, %s, { %s } },\n" \
+                        % ( self.getInsnIndex(insn), insn.mnemonic + ',', opr, acc, pfx, flags ) )
         self.ItabC.write( "};\n" )
 
    
@@ -319,7 +385,7 @@ class UdItabGenerator:
         enum  = "enum ud_mnemonic_code {\n    "
         enum += ",\n    ".join( [ "UD_I%s" % m for m in self.getMnemonicsList() ] )
         enum += ",\n    UD_MAX_MNEMONIC_CODE"
-        enum += "\n};\n"
+        enum += "\n} UD_ATTR_PACKED;\n"
         self.ItabH.write( enum )
         self.ItabH.write( "\n" )
 

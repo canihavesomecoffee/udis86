@@ -65,7 +65,9 @@ enum reg_class { /* register classes */
   REGCLASS_CR,
   REGCLASS_DB,
   REGCLASS_SEG,
-  REGCLASS_XMM
+  REGCLASS_XMM,
+  REGCLASS_BOUNDS,
+  REGCLASS_OPMASK
 };
 
  /* 
@@ -107,7 +109,7 @@ inp_next(struct ud *u)
   if (u->inp_end == 0) {
     if (u->inp_buf != NULL) {
       if (u->inp_buf_index < u->inp_buf_size) {
-        u->inp_ctr++;
+		u->inp_ctr++;
         return (u->inp_curr = u->inp_buf[u->inp_buf_index++]);
       }
     } else {
@@ -297,14 +299,14 @@ static UD_INLINE uint8_t
 vex_l(const struct ud *u)
 {
   UD_ASSERT(u->vex_op != 0);
-  return ((u->vex_op == 0xc4 ? u->vex_b2 : u->vex_b1) >> 2) & 1;
+  return ((u->vex_op != 0xc5 ? u->vex_b2 : u->vex_b1) >> 2) & 1;
 }
 
 static UD_INLINE uint8_t
 vex_w(const struct ud *u)
 {
   UD_ASSERT(u->vex_op != 0);
-  return u->vex_op == 0xc4 ? ((u->vex_b2 >> 7) & 1) : 0;
+  return u->vex_op != 0xc5 ? ((u->vex_b2 >> 7) & 1) : 0;
 }
 
 
@@ -313,7 +315,6 @@ modrm(struct ud * u)
 {
     if ( !u->have_modrm ) {
         u->modrm = inp_next( u );
-        u->modrm_offset = (uint8_t) (u->inp_ctr - 1);
         u->have_modrm = 1;
     }
     return u->modrm;
@@ -340,35 +341,1130 @@ resolve_operand_size(const struct ud* u, ud_operand_size_t osize)
   }
 }
 
-
 static int resolve_mnemonic( struct ud* u )
 {
-  /* resolve 3dnow weirdness. */
-  if ( u->mnemonic == UD_I3dnow ) {
-    u->mnemonic = ud_itab[ u->le->table[ inp_curr( u )  ] ].mnemonic;
-  }
-  /* SWAPGS is only valid in 64bits mode */
-  if ( u->mnemonic == UD_Iswapgs && u->dis_mode != 64 ) {
-    UDERR(u, "swapgs invalid in 64bits mode\n");
-    return -1;
-  }
-
-  if (u->mnemonic == UD_Ixchg) {
-    if ((u->operand[0].type == UD_OP_REG && u->operand[0].base == UD_R_AX  &&
-         u->operand[1].type == UD_OP_REG && u->operand[1].base == UD_R_AX) ||
-        (u->operand[0].type == UD_OP_REG && u->operand[0].base == UD_R_EAX &&
-         u->operand[1].type == UD_OP_REG && u->operand[1].base == UD_R_EAX)) {
-      u->operand[0].type = UD_NONE;
-      u->operand[1].type = UD_NONE;
-      u->mnemonic = UD_Inop;
-    }
-  }
-
-  if (u->mnemonic == UD_Inop && u->pfx_repe) {
-    u->pfx_repe = 0;
-    u->mnemonic = UD_Ipause;
-  }
-  return 0;
+	if( u->mnemonic == UD_I3dnow )
+	{
+		// resolve 3dnow weirdness.
+		u->mnemonic = ud_itab[ u->le->table[ inp_curr( u )  ] ].mnemonic;
+	}
+	else if( u->mnemonic == UD_Iswapgs )
+	{
+		if( u->dis_mode != 64 )
+		{
+			UDERR(u, "swapgs invalid in 64bits mode\n");
+			return -1;
+		}
+	}
+	else if( u->mnemonic == UD_Ixchg )
+	{
+		if(
+			(u->operand[0].type == UD_OP_REG && u->operand[0].base == UD_R_AX  &&
+			u->operand[1].type == UD_OP_REG && u->operand[1].base == UD_R_AX) ||
+			(u->operand[0].type == UD_OP_REG && u->operand[0].base == UD_R_EAX &&
+			u->operand[1].type == UD_OP_REG && u->operand[1].base == UD_R_EAX)
+		)
+		{
+			u->operand[0].type = UD_NONE;
+			u->operand[1].type = UD_NONE;
+			u->mnemonic        = UD_Inop;
+		}
+	}
+	else if( u->mnemonic == UD_Inop )
+	{
+		if( u->pfx_repe )
+		{
+			u->pfx_repe = 0;
+			u->mnemonic = UD_Ipause;
+		}
+	}
+	else if( u->mnemonic == UD_Ixrstor )
+	{
+		if( u->pfx_rex != 0 && u->dis_mode == 64 && u->opr_mode == 64 )
+			u->mnemonic = UD_Ixrstor64;
+	}
+	else if( u->mnemonic == UD_Ixrstors )
+	{
+		if( u->pfx_rex != 0 && u->dis_mode == 64 && u->opr_mode == 64 )
+			u->mnemonic = UD_Ixrstors64;
+	}
+	else if( u->mnemonic == UD_Ixsave )
+	{
+		if( u->pfx_rex != 0 && u->dis_mode == 64 && u->opr_mode == 64 )
+			u->mnemonic = UD_Ixsave64;
+	}
+	else if( u->mnemonic == UD_Ixsavec )
+	{
+		if( u->pfx_rex != 0 && u->dis_mode == 64 && u->opr_mode == 64 )
+			u->mnemonic = UD_Ixsavec64;
+	}
+	else if( u->mnemonic == UD_Ixsaveopt )
+	{
+		if( u->pfx_rex != 0 && u->dis_mode == 64 && u->opr_mode == 64 )
+			u->mnemonic = UD_Ixsaveopt64;
+	}
+	else if( u->mnemonic == UD_Ixsaves )
+	{
+		if( u->pfx_rex != 0 && u->dis_mode == 64 && u->opr_mode == 64 )
+			u->mnemonic = UD_Ixsaves64;
+	}
+	else if( u->mnemonic == UD_Ifxrstor )
+	{
+		if( u->pfx_rex != 0 && u->dis_mode == 64 && u->opr_mode == 64 )
+			u->mnemonic = UD_Ifxrstor64;
+	}
+	else if( u->mnemonic == UD_Ifxsave )
+	{
+		if( u->pfx_rex != 0 && u->dis_mode == 64 && u->opr_mode == 64 )
+			u->mnemonic = UD_Ifxsave64;
+	}
+	else
+	{
+		// test the third/fourth operand for a immediate to see if we need to change the opcode.
+		if( u->operand[2].type == UD_OP_IMM )
+		{
+			if( u->mnemonic == UD_Ipclmulqdq )
+			{
+				switch( u->operand[2].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Ipclmullqlqdq;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Ipclmulhqlqdq;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x10:
+						u->mnemonic        = UD_Ipclmullqhqdq;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x11:
+						u->mnemonic        = UD_Ipclmulhqhqdq;
+						u->operand[2].type = UD_NONE;
+						break;
+				}
+			}
+			else if( u->mnemonic == UD_Icmppd )
+			{
+				switch( u->operand[2].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Icmpeqpd;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Icmpltpd;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x02:
+						u->mnemonic        = UD_Icmplepd;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x03:
+						u->mnemonic        = UD_Icmpunordpd;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x04:
+						u->mnemonic        = UD_Icmpneqpd;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x05:
+						u->mnemonic        = UD_Icmpnltpd;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x06:
+						u->mnemonic        = UD_Icmpnlepd;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x07:
+						u->mnemonic        = UD_Icmpordpd;
+						u->operand[2].type = UD_NONE;
+						break;
+				}
+			}
+			else if( u->mnemonic == UD_Icmpps )
+			{
+				switch( u->operand[2].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Icmpeqps;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Icmpltps;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x02:
+						u->mnemonic        = UD_Icmpleps;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x03:
+						u->mnemonic        = UD_Icmpunordps;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x04:
+						u->mnemonic        = UD_Icmpneqps;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x05:
+						u->mnemonic        = UD_Icmpnltps;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x06:
+						u->mnemonic        = UD_Icmpnleps;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x07:
+						u->mnemonic        = UD_Icmpordps;
+						u->operand[2].type = UD_NONE;
+						break;
+				}
+			}
+			else if( u->mnemonic == UD_Icmpss )
+			{
+				switch( u->operand[2].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Icmpeqss;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Icmpltss;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x02:
+						u->mnemonic        = UD_Icmpless;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x03:
+						u->mnemonic        = UD_Icmpunordss;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x04:
+						u->mnemonic        = UD_Icmpneqss;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x05:
+						u->mnemonic        = UD_Icmpnltss;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x06:
+						u->mnemonic        = UD_Icmpnless;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x07:
+						u->mnemonic        = UD_Icmpordss;
+						u->operand[2].type = UD_NONE;
+						break;
+				}
+			}
+			else if( u->mnemonic == UD_Icmpsd )
+			{
+				switch( u->operand[2].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Icmpeqsd;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Icmpltsd;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x02:
+						u->mnemonic        = UD_Icmplesd;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x03:
+						u->mnemonic        = UD_Icmpunordsd;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x04:
+						u->mnemonic        = UD_Icmpneqsd;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x05:
+						u->mnemonic        = UD_Icmpnltsd;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x06:
+						u->mnemonic        = UD_Icmpnlesd;
+						u->operand[2].type = UD_NONE;
+						break;
+					case 0x07:
+						u->mnemonic        = UD_Icmpordsd;
+						u->operand[2].type = UD_NONE;
+						break;
+				}
+			}
+		}
+		else if( u->operand[3].type == UD_OP_IMM )
+		{
+			if( u->mnemonic == UD_Ivpclmulqdq )
+			{
+				switch( u->operand[3].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Ivpclmullqlqdq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Ivpclmulhqlqdq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x10:
+						u->mnemonic        = UD_Ivpclmullqhqdq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x11:
+						u->mnemonic        = UD_Ivpclmulhqhqdq;
+						u->operand[3].type = UD_NONE;
+						break;
+				}
+			}
+			else if( u->mnemonic == UD_Ivcmppd )
+			{
+				switch( u->operand[3].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Ivcmpeqpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Ivcmpltpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x02:
+						u->mnemonic        = UD_Ivcmplepd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x03:
+						u->mnemonic        = UD_Ivcmpunordpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x04:
+						u->mnemonic        = UD_Ivcmpneqpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x05:
+						u->mnemonic        = UD_Ivcmpnltpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x06:
+						u->mnemonic        = UD_Ivcmpnlepd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x07:
+						u->mnemonic        = UD_Ivcmpordpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x08:
+						u->mnemonic        = UD_Ivcmpeq_uqpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x09:
+						u->mnemonic        = UD_Ivcmpngepd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0A:
+						u->mnemonic        = UD_Ivcmpngtpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0B:
+						u->mnemonic        = UD_Ivcmpfalsepd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0C:
+						u->mnemonic        = UD_Ivcmpneq_oqpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0D:
+						u->mnemonic        = UD_Ivcmpgepd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0E:
+						u->mnemonic        = UD_Ivcmpgtpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0F:
+						u->mnemonic        = UD_Ivcmptruepd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x10:
+						u->mnemonic        = UD_Ivcmpeq_ospd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x11:
+						u->mnemonic        = UD_Ivcmplt_oqpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x12:
+						u->mnemonic        = UD_Ivcmple_oqpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x13:
+						u->mnemonic        = UD_Ivcmpunord_spd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x14:
+						u->mnemonic        = UD_Ivcmpneq_uspd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x15:
+						u->mnemonic        = UD_Ivcmpnlt_uqpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x16:
+						u->mnemonic        = UD_Ivcmpnle_uqpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x17:
+						u->mnemonic        = UD_Ivcmpord_spd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x18:
+						u->mnemonic        = UD_Ivcmpeq_uspd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x19:
+						u->mnemonic        = UD_Ivcmpnge_uqpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1A:
+						u->mnemonic        = UD_Ivcmpngt_uqpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1B:
+						u->mnemonic        = UD_Ivcmpfalse_ospd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1C:
+						u->mnemonic        = UD_Ivcmpneq_ospd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1D:
+						u->mnemonic        = UD_Ivcmpge_oqpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1E:
+						u->mnemonic        = UD_Ivcmpgt_oqpd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1F:
+						u->mnemonic        = UD_Ivcmptrue_uspd;
+						u->operand[3].type = UD_NONE;
+						break;
+				}
+			}
+			else if( u->mnemonic == UD_Ivcmpps )
+			{
+				switch( u->operand[3].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Ivcmpeqps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Ivcmpltps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x02:
+						u->mnemonic        = UD_Ivcmpleps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x03:
+						u->mnemonic        = UD_Ivcmpunordps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x04:
+						u->mnemonic        = UD_Ivcmpneqps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x05:
+						u->mnemonic        = UD_Ivcmpnltps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x06:
+						u->mnemonic        = UD_Ivcmpnleps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x07:
+						u->mnemonic        = UD_Ivcmpordps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x08:
+						u->mnemonic        = UD_Ivcmpeq_uqps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x09:
+						u->mnemonic        = UD_Ivcmpngeps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0A:
+						u->mnemonic        = UD_Ivcmpngtps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0B:
+						u->mnemonic        = UD_Ivcmpfalseps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0C:
+						u->mnemonic        = UD_Ivcmpneq_oqps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0D:
+						u->mnemonic        = UD_Ivcmpgeps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0E:
+						u->mnemonic        = UD_Ivcmpgtps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0F:
+						u->mnemonic        = UD_Ivcmptrueps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x10:
+						u->mnemonic        = UD_Ivcmpeq_osps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x11:
+						u->mnemonic        = UD_Ivcmplt_oqps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x12:
+						u->mnemonic        = UD_Ivcmple_oqps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x13:
+						u->mnemonic        = UD_Ivcmpunord_sps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x14:
+						u->mnemonic        = UD_Ivcmpneq_usps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x15:
+						u->mnemonic        = UD_Ivcmpnlt_uqps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x16:
+						u->mnemonic        = UD_Ivcmpnle_uqps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x17:
+						u->mnemonic        = UD_Ivcmpord_sps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x18:
+						u->mnemonic        = UD_Ivcmpeq_usps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x19:
+						u->mnemonic        = UD_Ivcmpnge_uqps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1A:
+						u->mnemonic        = UD_Ivcmpngt_uqps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1B:
+						u->mnemonic        = UD_Ivcmpfalse_osps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1C:
+						u->mnemonic        = UD_Ivcmpneq_osps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1D:
+						u->mnemonic        = UD_Ivcmpge_oqps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1E:
+						u->mnemonic        = UD_Ivcmpgt_oqps;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1F:
+						u->mnemonic        = UD_Ivcmptrue_usps;
+						u->operand[3].type = UD_NONE;
+						break;
+				}
+			}
+			else if( u->mnemonic == UD_Ivcmpss )
+			{
+				switch( u->operand[3].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Ivcmpeqss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Ivcmpltss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x02:
+						u->mnemonic        = UD_Ivcmpless;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x03:
+						u->mnemonic        = UD_Ivcmpunordss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x04:
+						u->mnemonic        = UD_Ivcmpneqss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x05:
+						u->mnemonic        = UD_Ivcmpnltss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x06:
+						u->mnemonic        = UD_Ivcmpnless;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x07:
+						u->mnemonic        = UD_Ivcmpordss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x08:
+						u->mnemonic        = UD_Ivcmpeq_uqss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x09:
+						u->mnemonic        = UD_Ivcmpngess;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0A:
+						u->mnemonic        = UD_Ivcmpngtss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0B:
+						u->mnemonic        = UD_Ivcmpfalsess;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0C:
+						u->mnemonic        = UD_Ivcmpneq_oqss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0D:
+						u->mnemonic        = UD_Ivcmpgess;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0E:
+						u->mnemonic        = UD_Ivcmpgtss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0F:
+						u->mnemonic        = UD_Ivcmptruess;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x10:
+						u->mnemonic        = UD_Ivcmpeq_osss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x11:
+						u->mnemonic        = UD_Ivcmplt_oqss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x12:
+						u->mnemonic        = UD_Ivcmple_oqss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x13:
+						u->mnemonic        = UD_Ivcmpunord_sss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x14:
+						u->mnemonic        = UD_Ivcmpneq_usss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x15:
+						u->mnemonic        = UD_Ivcmpnlt_uqss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x16:
+						u->mnemonic        = UD_Ivcmpnle_uqss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x17:
+						u->mnemonic        = UD_Ivcmpord_sss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x18:
+						u->mnemonic        = UD_Ivcmpeq_usss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x19:
+						u->mnemonic        = UD_Ivcmpnge_uqss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1A:
+						u->mnemonic        = UD_Ivcmpngt_uqss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1B:
+						u->mnemonic        = UD_Ivcmpfalse_osss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1C:
+						u->mnemonic        = UD_Ivcmpneq_osss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1D:
+						u->mnemonic        = UD_Ivcmpge_oqss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1E:
+						u->mnemonic        = UD_Ivcmpgt_oqss;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1F:
+						u->mnemonic        = UD_Ivcmptrue_usss;
+						u->operand[3].type = UD_NONE;
+						break;
+				}
+			}
+			else if( u->mnemonic == UD_Ivcmpsd )
+			{
+				switch( u->operand[3].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Ivcmpeqsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Ivcmpltsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x02:
+						u->mnemonic        = UD_Ivcmplesd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x03:
+						u->mnemonic        = UD_Ivcmpunordsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x04:
+						u->mnemonic        = UD_Ivcmpneqsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x05:
+						u->mnemonic        = UD_Ivcmpnltsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x06:
+						u->mnemonic        = UD_Ivcmpnlesd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x07:
+						u->mnemonic        = UD_Ivcmpordsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x08:
+						u->mnemonic        = UD_Ivcmpeq_uqsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x09:
+						u->mnemonic        = UD_Ivcmpngesd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0A:
+						u->mnemonic        = UD_Ivcmpngtsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0B:
+						u->mnemonic        = UD_Ivcmpfalsesd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0C:
+						u->mnemonic        = UD_Ivcmpneq_oqsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0D:
+						u->mnemonic        = UD_Ivcmpgesd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0E:
+						u->mnemonic        = UD_Ivcmpgtsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x0F:
+						u->mnemonic        = UD_Ivcmptruesd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x10:
+						u->mnemonic        = UD_Ivcmpeq_ossd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x11:
+						u->mnemonic        = UD_Ivcmplt_oqsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x12:
+						u->mnemonic        = UD_Ivcmple_oqsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x13:
+						u->mnemonic        = UD_Ivcmpunord_ssd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x14:
+						u->mnemonic        = UD_Ivcmpneq_ussd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x15:
+						u->mnemonic        = UD_Ivcmpnlt_uqsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x16:
+						u->mnemonic        = UD_Ivcmpnle_uqsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x17:
+						u->mnemonic        = UD_Ivcmpord_ssd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x18:
+						u->mnemonic        = UD_Ivcmpeq_ussd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x19:
+						u->mnemonic        = UD_Ivcmpnge_uqsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1A:
+						u->mnemonic        = UD_Ivcmpngt_uqsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1B:
+						u->mnemonic        = UD_Ivcmpfalse_ossd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1C:
+						u->mnemonic        = UD_Ivcmpneq_ossd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1D:
+						u->mnemonic        = UD_Ivcmpge_oqsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1E:
+						u->mnemonic        = UD_Ivcmpgt_oqsd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x1F:
+						u->mnemonic        = UD_Ivcmptrue_ussd;
+						u->operand[3].type = UD_NONE;
+						break;
+				}
+			}
+			else if( u->mnemonic == UD_Ivpcomb )
+			{
+				switch( u->operand[3].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Ivpcomltb;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Ivpcomleb;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x02:
+						u->mnemonic        = UD_Ivpcomgtb;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x03:
+						u->mnemonic        = UD_Ivpcomgeb;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x04:
+						u->mnemonic        = UD_Ivpcomeqb;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x05:
+						u->mnemonic        = UD_Ivpcomneqb;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x06:
+						u->mnemonic        = UD_Ivpcomfalseb;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x07:
+						u->mnemonic        = UD_Ivpcomtrueb;
+						u->operand[3].type = UD_NONE;
+						break;
+				}
+			}
+			else if( u->mnemonic == UD_Ivpcomd )
+			{
+				switch( u->operand[3].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Ivpcomltd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Ivpcomled;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x02:
+						u->mnemonic        = UD_Ivpcomgtd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x03:
+						u->mnemonic        = UD_Ivpcomged;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x04:
+						u->mnemonic        = UD_Ivpcomeqd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x05:
+						u->mnemonic        = UD_Ivpcomneqd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x06:
+						u->mnemonic        = UD_Ivpcomfalsed;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x07:
+						u->mnemonic        = UD_Ivpcomtrued;
+						u->operand[3].type = UD_NONE;
+						break;
+				}
+			}
+			else if( u->mnemonic == UD_Ivpcomq )
+			{
+				switch( u->operand[3].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Ivpcomltq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Ivpcomleq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x02:
+						u->mnemonic        = UD_Ivpcomgtq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x03:
+						u->mnemonic        = UD_Ivpcomgeq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x04:
+						u->mnemonic        = UD_Ivpcomeqq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x05:
+						u->mnemonic        = UD_Ivpcomneqq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x06:
+						u->mnemonic        = UD_Ivpcomfalseq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x07:
+						u->mnemonic        = UD_Ivpcomtrueq;
+						u->operand[3].type = UD_NONE;
+						break;
+				}
+			}
+			else if( u->mnemonic == UD_Ivpcomub )
+			{
+				switch( u->operand[3].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Ivpcomltub;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Ivpcomleub;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x02:
+						u->mnemonic        = UD_Ivpcomgtub;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x03:
+						u->mnemonic        = UD_Ivpcomgeub;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x04:
+						u->mnemonic        = UD_Ivpcomequb;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x05:
+						u->mnemonic        = UD_Ivpcomnequb;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x06:
+						u->mnemonic        = UD_Ivpcomfalseub;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x07:
+						u->mnemonic        = UD_Ivpcomtrueub;
+						u->operand[3].type = UD_NONE;
+						break;
+				}
+			}
+			else if( u->mnemonic == UD_Ivpcomud )
+			{
+				switch( u->operand[3].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Ivpcomltud;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Ivpcomleud;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x02:
+						u->mnemonic        = UD_Ivpcomgtud;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x03:
+						u->mnemonic        = UD_Ivpcomgeud;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x04:
+						u->mnemonic        = UD_Ivpcomequd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x05:
+						u->mnemonic        = UD_Ivpcomnequd;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x06:
+						u->mnemonic        = UD_Ivpcomfalseud;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x07:
+						u->mnemonic        = UD_Ivpcomtrueud;
+						u->operand[3].type = UD_NONE;
+						break;
+				}
+			}
+			else if( u->mnemonic == UD_Ivpcomuq )
+			{
+				switch( u->operand[3].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Ivpcomltuq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Ivpcomleuq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x02:
+						u->mnemonic        = UD_Ivpcomgtuq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x03:
+						u->mnemonic        = UD_Ivpcomgeuq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x04:
+						u->mnemonic        = UD_Ivpcomequq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x05:
+						u->mnemonic        = UD_Ivpcomnequq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x06:
+						u->mnemonic        = UD_Ivpcomfalseuq;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x07:
+						u->mnemonic        = UD_Ivpcomtrueuq;
+						u->operand[3].type = UD_NONE;
+						break;
+				}
+			}
+			else if( u->mnemonic == UD_Ivpcomuw )
+			{
+				switch( u->operand[3].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Ivpcomltuw;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Ivpcomleuw;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x02:
+						u->mnemonic        = UD_Ivpcomgtuw;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x03:
+						u->mnemonic        = UD_Ivpcomgeuw;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x04:
+						u->mnemonic        = UD_Ivpcomequw;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x05:
+						u->mnemonic        = UD_Ivpcomnequw;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x06:
+						u->mnemonic        = UD_Ivpcomfalseuw;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x07:
+						u->mnemonic        = UD_Ivpcomtrueuw;
+						u->operand[3].type = UD_NONE;
+						break;
+				}
+			}
+			else if( u->mnemonic == UD_Ivpcomw )
+			{
+				switch( u->operand[3].lval.ubyte )
+				{
+					case 0x00:
+						u->mnemonic        = UD_Ivpcomltw;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x01:
+						u->mnemonic        = UD_Ivpcomlew;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x02:
+						u->mnemonic        = UD_Ivpcomgtw;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x03:
+						u->mnemonic        = UD_Ivpcomgew;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x04:
+						u->mnemonic        = UD_Ivpcomeqw;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x05:
+						u->mnemonic        = UD_Ivpcomneqw;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x06:
+						u->mnemonic        = UD_Ivpcomfalsew;
+						u->operand[3].type = UD_NONE;
+						break;
+					case 0x07:
+						u->mnemonic        = UD_Ivpcomtruew;
+						u->operand[3].type = UD_NONE;
+						break;
+				}
+			}
+		}
+	}
+	return 0;
 }
 
 
@@ -425,7 +1521,7 @@ decode_gpr(register struct ud* u, unsigned int s, unsigned char rm)
 }
 
 static void
-decode_reg(struct ud *u, 
+decode_reg(struct ud *u,
            struct ud_operand *opr,
            int type,
            int num,
@@ -439,8 +1535,10 @@ decode_reg(struct ud *u,
     case REGCLASS_XMM :
       reg = num + (size == SZ_QQ ? UD_R_YMM0 : UD_R_XMM0);
       break;
-    case REGCLASS_CR : reg = UD_R_CR0  + num; break;
-    case REGCLASS_DB : reg = UD_R_DR0  + num; break;
+	case REGCLASS_CR : reg = UD_R_CR0 + num; break;
+	case REGCLASS_DB : reg = UD_R_DR0 + num; break;
+	case REGCLASS_BOUNDS : reg = UD_R_BND0 + num; break;
+	case REGCLASS_OPMASK : reg = UD_R_K0 + num; break;
     case REGCLASS_SEG : {
       /*
        * Only 6 segment registers, anything else is an error.
@@ -522,7 +1620,7 @@ decode_mem_disp(struct ud* u, unsigned int size, struct ud_operand *op)
  * 
  */
 static UD_INLINE void
-decode_modrm_reg(struct ud         *u, 
+decode_modrm_reg(struct ud         *u,
                  struct ud_operand *operand,
                  unsigned int       type,
                  unsigned int       size)
@@ -539,7 +1637,7 @@ decode_modrm_reg(struct ud         *u,
  * 
  */
 static void 
-decode_modrm_rm(struct ud         *u, 
+decode_modrm_rm(struct ud         *u,
                 struct ud_operand *op,
                 unsigned char      type,    /* register type */
                 unsigned int       size)    /* operand size */
@@ -557,7 +1655,7 @@ decode_modrm_rm(struct ud         *u,
    *
    */
   if (mod == 3) {
-    decode_reg(u, op, type, rm, size);
+	decode_reg(u, op, type, rm, size);
     return;
   }
 
@@ -568,38 +1666,38 @@ decode_modrm_rm(struct ud         *u,
   op->size = resolve_operand_size(u, size);
 
   if (u->adr_mode == 64) {
-    op->base = UD_R_RAX + rm;
-    if (mod == 1) {
-      offset = 8;
-    } else if (mod == 2) {
-      offset = 32;
-    } else if (mod == 0 && (rm & 7) == 5) {           
-      op->base = UD_R_RIP;
-      offset = 32;
-    } else {
-      offset = 0;
-    }
-    /* 
-     * Scale-Index-Base (SIB) 
-     */
-    if ((rm & 7) == 4) {
-      inp_next(u);
-      
-      op->base  = UD_R_RAX + (SIB_B(inp_curr(u)) | (REX_B(u->_rex) << 3));
-      op->index = UD_R_RAX + (SIB_I(inp_curr(u)) | (REX_X(u->_rex) << 3));
+	op->base = UD_R_RAX + rm;
+	if (mod == 1) {
+	  offset = 8;
+	} else if (mod == 2) {
+	  offset = 32;
+	} else if (mod == 0 && (rm & 7) == 5) {
+	  op->base = UD_R_RIP;
+	  offset = 32;
+	} else {
+	  offset = 0;
+	}
+	/*
+	 * Scale-Index-Base (SIB)
+	 */
+	if ((rm & 7) == 4) {
+	  inp_next(u);
+
+	  op->base  = UD_R_RAX + (SIB_B(inp_curr(u)) | (REX_B(u->_rex) << 3));
+	  op->index = UD_R_RAX + (SIB_I(inp_curr(u)) | (REX_X(u->_rex) << 3));
       /* special conditions for base reference */
       if (op->index == UD_R_RSP) {
         op->index = UD_NONE;
         op->scale = UD_NONE;
       } else {
-        op->scale = (1 << SIB_S(inp_curr(u))) & ~1;
-      }
+		op->scale = (1 << SIB_S(inp_curr(u))) & ~1;
+	  }
 
       if (op->base == UD_R_RBP || op->base == UD_R_R13) {
         if (mod == 0) {
           op->base = UD_NONE;
         } 
-        if (mod == 1) {
+		if (mod == 1) {
           offset = 8;
         } else {
           offset = 32;
@@ -624,11 +1722,11 @@ decode_modrm_rm(struct ud         *u,
 
     /* Scale-Index-Base (SIB) */
     if ((rm & 7) == 4) {
-      inp_next(u);
+	  inp_next(u);
 
-      op->scale = (1 << SIB_S(inp_curr(u))) & ~1;
-      op->index = UD_R_EAX + (SIB_I(inp_curr(u)) | (REX_X(u->pfx_rex) << 3));
-      op->base  = UD_R_EAX + (SIB_B(inp_curr(u)) | (REX_B(u->pfx_rex) << 3));
+	  op->scale = (1 << SIB_S(inp_curr(u))) & ~1;
+	  op->index = UD_R_EAX + (SIB_I(inp_curr(u)) | (REX_X(u->pfx_rex) << 3));
+	  op->base  = UD_R_EAX + (SIB_B(inp_curr(u)) | (REX_B(u->pfx_rex) << 3));
 
       if (op->index == UD_R_ESP) {
         op->index = UD_NONE;
@@ -671,7 +1769,7 @@ decode_modrm_rm(struct ud         *u,
   if (offset) {
     decode_mem_disp(u, offset, op);
   } else {
-    op->offset = 0;
+	op->offset = 0;
   }
 }
 
@@ -693,12 +1791,12 @@ decode_moffset(struct ud *u, unsigned int size, struct ud_operand *opr)
 
 
 static void
-decode_vex_vvvv(struct ud *u, struct ud_operand *opr, unsigned size)
+decode_vex_vvvv(struct ud *u, struct ud_operand *opr, unsigned char type, unsigned size)
 {
   uint8_t vvvv;
   UD_ASSERT(u->vex_op != 0);
-  vvvv = ((u->vex_op == 0xc4 ? u->vex_b2 : u->vex_b1) >> 3) & 0xf;
-  decode_reg(u, opr, REGCLASS_XMM, (0xf & ~vvvv), size);
+  vvvv = ((u->vex_op != 0xc5 ? u->vex_b2 : u->vex_b1) >> 3) & 0xf;
+  decode_reg(u, opr, type, (0xf & ~vvvv), size);
 }
 
 
@@ -718,6 +1816,114 @@ decode_vex_immreg(struct ud *u, struct ud_operand *opr, unsigned size)
 }
 
 
+static void decode_vex_vsib( struct ud *u, struct ud_operand *op, unsigned size, enum ud_type index_base )
+{
+	size_t offset = 0;
+	unsigned char mod, rm;
+
+	mod = MODRM_MOD(modrm(u));
+
+	if (mod == 3)
+		return;
+
+	rm = (REX_B(u->_rex) << 3) | MODRM_RM(modrm(u));
+
+  op->type = UD_OP_MEM;
+  op->size = resolve_operand_size(u, size);
+
+  if (u->adr_mode == 64) {
+	op->base = UD_R_RAX + rm;
+	if (mod == 1) {
+	  offset = 8;
+	} else if (mod == 2) {
+	  offset = 32;
+	} else if (mod == 0 && (rm & 7) == 5) {
+	  op->base = UD_R_RIP;
+	  offset = 32;
+	} else {
+	  offset = 0;
+	}
+	/*
+	 * Scale-Index-Base (SIB)
+	 */
+	if ((rm & 7) == 4) {
+	  inp_next(u);
+
+	  op->base  = UD_R_RAX + (SIB_B(inp_curr(u)) | (REX_B(u->_rex) << 3));
+	  op->index = index_base + (SIB_I(inp_curr(u)) | (REX_X(u->_rex) << 3));
+	  /* special conditions for base reference */
+      if (op->index == UD_R_RSP) {
+        op->index = UD_NONE;
+        op->scale = UD_NONE;
+      } else {
+		op->scale = (1 << SIB_S(inp_curr(u))) & ~1;
+	  }
+
+      if (op->base == UD_R_RBP || op->base == UD_R_R13) {
+        if (mod == 0) {
+          op->base = UD_NONE;
+        }
+		if (mod == 1) {
+          offset = 8;
+        } else {
+          offset = 32;
+        }
+      }
+    } else {
+        op->scale = UD_NONE;
+        op->index = UD_NONE;
+    }
+  } else if (u->adr_mode == 32) {
+    op->base = UD_R_EAX + rm;
+    if (mod == 1) {
+      offset = 8;
+    } else if (mod == 2) {
+      offset = 32;
+    } else if (mod == 0 && rm == 5) {
+      op->base = UD_NONE;
+      offset = 32;
+    } else {
+      offset = 0;
+    }
+
+    /* Scale-Index-Base (SIB) */
+    if ((rm & 7) == 4) {
+	  inp_next(u);
+
+	  op->scale = (1 << SIB_S(inp_curr(u))) & ~1;
+	  op->index = index_base + (SIB_I(inp_curr(u)) | (REX_X(u->pfx_rex) << 3));
+	  op->base  = UD_R_EAX + (SIB_B(inp_curr(u)) | (REX_B(u->pfx_rex) << 3));
+
+      if (op->index == UD_R_ESP) {
+        op->index = UD_NONE;
+        op->scale = UD_NONE;
+      }
+
+      /* special condition for base reference */
+      if (op->base == UD_R_EBP) {
+        if (mod == 0) {
+          op->base = UD_NONE;
+        }
+        if (mod == 1) {
+          offset = 8;
+        } else {
+          offset = 32;
+        }
+      }
+    } else {
+      op->scale = UD_NONE;
+      op->index = UD_NONE;
+    }
+  }
+
+  if (offset) {
+    decode_mem_disp(u, offset, op);
+  } else {
+	op->offset = 0;
+  }
+
+	return;
+}
 /* 
  * decode_operand
  *
@@ -739,9 +1945,9 @@ decode_operand(struct ud           *u,
       break;
     case OP_MR:
       decode_modrm_rm(u, operand, REGCLASS_GPR, 
-                      MODRM_MOD(modrm(u)) == 3 ? 
-                        Mx_reg_size(size) : Mx_mem_size(size));
-      break;
+					  MODRM_MOD(modrm(u)) == 3 ?
+						Mx_reg_size(size) : Mx_mem_size(size));
+	  break;
     case OP_F:
       u->br_far  = 1;
       /* intended fall through */
@@ -751,12 +1957,23 @@ decode_operand(struct ud           *u,
       }
       /* intended fall through */
     case OP_E:
-      decode_modrm_rm(u, operand, REGCLASS_GPR, size);
-      break;
+	  decode_modrm_rm(u, operand, REGCLASS_GPR, size);
+	  break;
     case OP_G:
       decode_modrm_reg(u, operand, REGCLASS_GPR, size);
-      break;
-    case OP_sI:
+	  break;
+   case OP_B:
+	  decode_modrm_reg(u, operand, REGCLASS_BOUNDS, size);
+	  break;
+   case OP_BM:
+	  decode_modrm_rm(u, operand, REGCLASS_BOUNDS, size);
+	  break;
+   case OP_BMR:
+	  decode_modrm_rm(u, operand, REGCLASS_BOUNDS,
+			MODRM_MOD(modrm(u)) == 3 ?
+			Mx_reg_size(size) : Mx_mem_size(size));
+	  break;
+	case OP_sI:
     case OP_I:
       decode_imm(u, size, operand);
       break;
@@ -777,25 +1994,46 @@ decode_operand(struct ud           *u,
       break;
     case OP_U:
       if (MODRM_MOD(modrm(u)) != 3) {
-        UDERR(u, "expected modrm.mod == 3\n");
+		UDERR(u, "expected modrm.mod == 3\n");
       }
       /* intended fall through */
-    case OP_W:
-      decode_modrm_rm(u, operand, REGCLASS_XMM, size);
-      break;
+	case OP_W:
+	  decode_modrm_rm(u, operand, REGCLASS_XMM, size);
+	  break;
     case OP_V:
       decode_modrm_reg(u, operand, REGCLASS_XMM, size);
       break;
-    case OP_H:
-      decode_vex_vvvv(u, operand, size);
-      break;
-    case OP_MU:
-      decode_modrm_rm(u, operand, REGCLASS_XMM, 
-                      MODRM_MOD(modrm(u)) == 3 ? 
-                        Mx_reg_size(size) : Mx_mem_size(size));
+	case OP_H:
+	  decode_vex_vvvv(u, operand, REGCLASS_XMM, size);
+	  break;
+	case OP_HR:
+	  decode_vex_vvvv(u, operand, REGCLASS_GPR, size);
+	  break;
+	case OP_XS:
+	  decode_vex_vsib(u, operand, size, ((P_VEXL(u->itab_entry->prefix) && vex_l(u)) ?  UD_R_YMM0 : UD_R_XMM0) );
+	  break;
+	case OP_XSX:
+	  decode_vex_vsib(u, operand, size, UD_R_XMM0 );
+	  break;
+	case OP_XSY:
+	  decode_vex_vsib(u, operand, size, UD_R_YMM0 );
+	  break;
+	case OP_K:
+	  decode_modrm_reg(u, operand, REGCLASS_OPMASK, size);
+	  break;
+	case OP_KM:
+	  decode_modrm_rm(u, operand, REGCLASS_OPMASK, size);
+	  break;
+	case OP_KH:
+	  decode_vex_vvvv(u, operand, REGCLASS_OPMASK, size);
+	  break;
+	case OP_MU:
+	  decode_modrm_rm(u, operand, REGCLASS_XMM,
+					  MODRM_MOD(modrm(u)) == 3 ?
+						Mx_reg_size(size) : Mx_mem_size(size));
       break;
     case OP_S:
-      decode_modrm_reg(u, operand, REGCLASS_SEG, size);
+	  decode_modrm_reg(u, operand, REGCLASS_SEG, size);
       break;
     case OP_O:
       decode_moffset(u, size, operand);
@@ -864,20 +2102,25 @@ decode_operand(struct ud           *u,
       operand->lval.sbyte = 3;
       break;
     case OP_ST0: 
-    case OP_ST1: 
+	case OP_ST1:
     case OP_ST2: 
     case OP_ST3:
     case OP_ST4:
     case OP_ST5: 
     case OP_ST6: 
     case OP_ST7:
-      operand->type = UD_OP_REG;
-      operand->base = (type - OP_ST0) + UD_R_ST0;
-      operand->size = 80;
+	  operand->type = UD_OP_REG;
+	  operand->base = (type - OP_ST0) + UD_R_ST0;
+	  operand->size = 80;
       break;
     case OP_L:
       decode_vex_immreg(u, operand, size);
-      break;
+	  break;
+	case OP_IMP_XMM0:
+      operand->type = UD_OP_REG;
+	  operand->base = UD_R_XMM0;
+	  operand->size = SZ_DQ;
+	  break;
     default :
       operand->type = UD_NONE;
       break;
@@ -896,24 +2139,63 @@ decode_operand(struct ud           *u,
 static int
 decode_operands(struct ud* u)
 {
-  decode_operand(u, &u->operand[0],
-                    u->itab_entry->operand1.type,
-                    u->itab_entry->operand1.size);
-  if (u->operand[0].type != UD_NONE) {
-      decode_operand(u, &u->operand[1],
-                        u->itab_entry->operand2.type,
-                        u->itab_entry->operand2.size);
+  decode_operand(
+	  u,
+	  &u->operand[0],
+	  u->itab_entry->operand1.type,
+	  u->itab_entry->operand1.size
+  );
+
+  u->operand[0].access = u->itab_entry->access1;
+
+  if( u->operand[0].access == UD_ACCESS_NONE && u->operand[0].type == UD_OP_IMM )
+	u->operand[0].access = UD_ACCESS_READ;
+
+  if( u->operand[0].type != UD_NONE )
+  {
+	  decode_operand(
+		  u,
+		  &u->operand[1],
+		  u->itab_entry->operand2.type,
+		  u->itab_entry->operand2.size
+	  );
+
+	  u->operand[1].access = u->itab_entry->access2;
+
+	  if( u->operand[1].access == UD_ACCESS_NONE && u->operand[1].type == UD_OP_IMM )
+		u->operand[1].access = UD_ACCESS_READ;
   }
-  if (u->operand[1].type != UD_NONE) {
-      decode_operand(u, &u->operand[2],
-                        u->itab_entry->operand3.type,
-                        u->itab_entry->operand3.size);
+
+  if( u->operand[1].type != UD_NONE )
+  {
+	  decode_operand(
+		  u,
+		  &u->operand[2],
+		  u->itab_entry->operand3.type,
+		  u->itab_entry->operand3.size
+	  );
+
+	  u->operand[2].access = u->itab_entry->access3;
+
+	  if( u->operand[2].access == UD_ACCESS_NONE && u->operand[2].type == UD_OP_IMM )
+		u->operand[2].access = UD_ACCESS_READ;
   }
-  if (u->operand[2].type != UD_NONE) {
-      decode_operand(u, &u->operand[3],
-                        u->itab_entry->operand4.type,
-                        u->itab_entry->operand4.size);
+
+  if( u->operand[2].type != UD_NONE )
+  {
+	  decode_operand(
+		  u,
+		  &u->operand[3],
+		  u->itab_entry->operand4.type,
+		  u->itab_entry->operand4.size
+	  );
+
+	  u->operand[3].access = u->itab_entry->access4;
+
+	  if( u->operand[3].access == UD_ACCESS_NONE && u->operand[3].type == UD_OP_IMM )
+		u->operand[3].access = UD_ACCESS_READ;
   }
+
   return 0;
 }
     
@@ -924,42 +2206,174 @@ decode_operands(struct ud* u)
 static void
 clear_insn(register struct ud* u)
 {
-  u->error     = 0;
-  u->pfx_seg   = 0;
-  u->pfx_opr   = 0;
-  u->pfx_adr   = 0;
-  u->pfx_lock  = 0;
-  u->pfx_repne = 0;
-  u->pfx_rep   = 0;
-  u->pfx_repe  = 0;
-  u->pfx_rex   = 0;
-  u->pfx_str   = 0;
-  u->mnemonic  = UD_Inone;
-  u->itab_entry = NULL;
-  u->have_modrm = 0;
-  u->br_far    = 0;
-  u->vex_op    = 0;
-  u->_rex      = 0;
+  u->error           = 0;
+  u->pfx_seg         = 0;
+  u->pfx_opr         = 0;
+  u->pfx_adr         = 0;
+  u->pfx_lock        = 0;
+  u->pfx_bnd         = 0;
+  u->pfx_xacquire    = 0;
+  u->pfx_xrelease    = 0;
+  u->pfx_repne       = 0;
+  u->pfx_rep         = 0;
+  u->pfx_repe        = 0;
+  u->pfx_rex         = 0;
+  u->pfx_str         = 0;
+  u->mnemonic        = UD_Inone;
+  u->itab_entry      = NULL;
+  u->have_modrm      = 0;
+  u->br_far          = 0;
+  u->vex_op          = 0;
+  u->_rex            = 0;
   u->operand[0].type = UD_NONE;
   u->operand[1].type = UD_NONE;
   u->operand[2].type = UD_NONE;
   u->operand[3].type = UD_NONE;
 }
 
-
-static UD_INLINE int
-resolve_pfx_str(struct ud* u)
+static UD_INLINE int resolve_pfx_str( struct ud * u )
 {
-  if (u->pfx_str == 0xf3) {
-    if (P_STR(u->itab_entry->prefix)) {
-        u->pfx_rep  = 0xf3;
-    } else {
-        u->pfx_repe = 0xf3;
-    }
-  } else if (u->pfx_str == 0xf2) {
-    u->pfx_repne = 0xf3;
-  }
-  return 0;
+	if( u->pfx_str == 0xf3 )
+	{
+		if( u->vendor == UD_VENDOR_AMD )
+		{
+			u->pfx_repe = u->pfx_str;
+		}
+		else
+		{
+			if( u->pfx_lock == 0xf0 )
+			{
+				if( u->operand[0].type == UD_OP_MEM )
+				{
+					switch( u->mnemonic )
+					{
+						case UD_Iadd:
+						case UD_Iadc:
+						case UD_Iand:
+						case UD_Ibtc:
+						case UD_Ibtr:
+						case UD_Ibts:
+						case UD_Icmpxchg:
+						case UD_Icmpxchg8b:
+						case UD_Idec:
+						case UD_Iinc:
+						case UD_Ineg:
+						case UD_Inot:
+						case UD_Ior:
+						case UD_Isbb:
+						case UD_Isub:
+						case UD_Ixor:
+						case UD_Ixadd:
+						case UD_Ixchg:
+							u->pfx_xrelease = u->pfx_str;
+							break;
+						default:
+							break;
+					}
+				}
+			}
+			else if( u->mnemonic == UD_Ixchg )
+			{
+				u->pfx_xrelease = u->pfx_str;
+			}
+			else if( u->mnemonic == UD_Imov && u->operand[0].type == UD_OP_MEM && (u->operand[1].type == UD_OP_REG || u->operand[1].type == UD_OP_IMM ) )
+			{
+				u->pfx_xrelease = u->pfx_str;
+			}
+
+			if( u->pfx_xrelease != u->pfx_str )
+			{
+				if( P_STR( u->itab_entry->prefix ) )
+				{
+					u->pfx_rep = u->pfx_str;
+				}
+				else
+				{
+					u->pfx_repe = u->pfx_str;
+				}
+			}
+		}
+	}
+	else if( u->pfx_str == 0xf2 )
+	{
+		if( u->vendor == UD_VENDOR_AMD )
+		{
+			u->pfx_repne = u->pfx_str;
+		}
+		else
+		{
+			if( u->pfx_lock == 0xf0 )
+			{
+				if( u->operand[0].type == UD_OP_MEM )
+				{
+					switch( u->mnemonic )
+					{
+						case UD_Iadd:
+						case UD_Iadc:
+						case UD_Iand:
+						case UD_Ibtc:
+						case UD_Ibtr:
+						case UD_Ibts:
+						case UD_Icmpxchg:
+						case UD_Icmpxchg8b:
+						case UD_Idec:
+						case UD_Iinc:
+						case UD_Ineg:
+						case UD_Inot:
+						case UD_Ior:
+						case UD_Isbb:
+						case UD_Isub:
+						case UD_Ixor:
+						case UD_Ixadd:
+						case UD_Ixchg:
+							u->pfx_xacquire = u->pfx_str;
+							break;
+						default:
+							break;
+					}
+				}
+			}
+			else if( u->mnemonic == UD_Ixchg )
+			{
+				u->pfx_xacquire = u->pfx_str;
+			}
+
+			if( u->pfx_xacquire != u->pfx_str )
+			{
+				switch( u->mnemonic )
+				{
+					case UD_Icall:
+					case UD_Iret:
+					case UD_Ija:
+					case UD_Ijae:
+					case UD_Ijb:
+					case UD_Ijbe:
+					case UD_Ijcxz:
+					case UD_Ijecxz:
+					case UD_Ijg:
+					case UD_Ijge:
+					case UD_Ijl:
+					case UD_Ijle:
+					case UD_Ijmp:
+					case UD_Ijno:
+					case UD_Ijnp:
+					case UD_Ijns:
+					case UD_Ijnz:
+					case UD_Ijo:
+					case UD_Ijp:
+					case UD_Ijrcxz:
+					case UD_Ijs:
+					case UD_Ijz:
+						u->pfx_bnd = u->pfx_str;
+						break;
+					default:
+						u->pfx_repne = u->pfx_str;
+						break;
+				}
+			}
+		}
+	}
+	return 0;
 }
 
 
@@ -984,14 +2398,17 @@ resolve_mode( struct ud* u )
      *  - rex prefix (if any, and not vex)
      *  - allowed prefixes specified by the opcode map
      */
-    if (u->vex_op == 0xc4) {
+	if (u->vex_op == 0xc4 || u->vex_op == 0x8f ) {
         /* vex has rex.rxb in 1's complement */
-        u->_rex = ((~(u->vex_b1 >> 5) & 0x7) /* rex.0rxb */ | 
-                   ((u->vex_b2  >> 4) & 0x8) /* rex.w000 */);
-    } else if (u->vex_op == 0xc5) {
-        /* vex has rex.r in 1's complement */
-        u->_rex = (~(u->vex_b1 >> 5)) & 4;
-    } else {
+		u->_rex    = ((~(u->vex_b1 >> 5) & 0x7) /* rex.0rxb */ | ((u->vex_b2  >> 4) & 0x8) /* rex.w000 */);
+		// patch back in pfx_rex so decode_mod_rm() works as expected under certain conditions.
+		u->pfx_rex = u->_rex;
+	} else if (u->vex_op == 0xc5) {
+		/* vex has rex.r in 1's complement */
+		u->_rex    = (~(u->vex_b1 >> 5)) & 4;
+		// patch back in pfx_rex...
+		u->pfx_rex = u->_rex;
+	} else {
         UD_ASSERT(u->vex_op == 0);
         u->_rex = u->pfx_rex;
     }
@@ -1021,7 +2438,7 @@ resolve_mode( struct ud* u )
     u->adr_mode = ( u->pfx_adr ) ? 16 : 32;
   } else if ( u->dis_mode == 16 ) { /* set 16bit-mode flags */
     u->opr_mode = ( u->pfx_opr ) ? 32 : 16;
-    u->adr_mode = ( u->pfx_adr ) ? 32 : 16;
+	u->adr_mode = ( u->pfx_adr ) ? 32 : 16;
   }
 
   return 0;
@@ -1034,10 +2451,10 @@ decode_insn(struct ud *u, uint16_t ptr)
   UD_ASSERT((ptr & 0x8000) == 0);
   u->itab_entry = &ud_itab[ ptr ];
   u->mnemonic = u->itab_entry->mnemonic;
-  return (resolve_pfx_str(u)  == 0 &&
-          resolve_mode(u)     == 0 &&
-          decode_operands(u)  == 0 &&
-          resolve_mnemonic(u) == 0) ? 0 : -1;
+  return (resolve_mode(u)     == 0 &&
+		  decode_operands(u)  == 0 &&
+		  resolve_pfx_str(u)  == 0 &&
+		  resolve_mnemonic(u) == 0) ? 0 : -1;
 }
 
 
@@ -1111,29 +2528,52 @@ static int
 decode_vex(struct ud *u)
 {
   uint8_t index;
-  if (u->dis_mode != 64 && MODRM_MOD(inp_peek(u)) != 0x3) {
-    index = 0;
-  } else {
-    u->vex_op = inp_curr(u);
-    u->vex_b1 = inp_next(u);
-    if (u->vex_op == 0xc4) {
-      uint8_t pp, m;
-      /* 3-byte vex */
-      u->vex_b2 = inp_next(u);
-      UD_RETURN_ON_ERROR(u);
-      m  = u->vex_b1 & 0x1f;
-      if (m == 0 || m > 3) {
-        UD_RETURN_WITH_ERROR(u, "reserved vex.m-mmmm value");
-      }
-      pp = u->vex_b2 & 0x3;
-      index = (pp << 2) | m;
-    } else {
-      /* 2-byte vex */
-      UD_ASSERT(u->vex_op == 0xc5);
-      index = 0x1 | ((u->vex_b1 & 0x3) << 2);
-    }
+  if (u->dis_mode != 64 && MODRM_MOD(inp_peek(u)) != 0x3)
+  {
+      index = 0;
   }
-  return decode_ext(u, u->le->table[index]); 
+  else
+  {
+	  u->vex_op = inp_curr(u);
+	  u->vex_b1 = inp_next(u);
+	  if (u->vex_op == 0xc4 || u->vex_op == 0x8f)
+	  {
+          uint8_t pp, m;
+		  /* 3-byte vex/xop */
+		  u->vex_b2 = inp_next(u);
+		  UD_RETURN_ON_ERROR(u);
+		  m = u->vex_b1 & 0x1f;
+          if (u->vex_op == 0x8f)
+          {
+			  if( m != 8 && m != 9 && m != 10 )
+				  UD_RETURN_WITH_ERROR(u, "reserved vex.m-mmmm value");
+			  // see ud_opcode.py:93
+			  pp = u->vex_b2 & 0x3;
+			  if( m == 8 )
+				index = (pp << 2) | 0x10;
+			  else if( m == 9 )
+				index = (pp << 2) | 0x14;
+			  else
+				index = (pp << 2) | 0x18;
+          }
+          else if (m == 0 || m > 3)
+          {
+              UD_RETURN_WITH_ERROR(u, "reserved vex.m-mmmm value");
+		  }
+		  else
+		  {
+			  pp = u->vex_b2 & 0x3;
+			  index = (pp << 2) | m;
+		  }
+      }
+      else
+      {
+          /* 2-byte vex */
+          UD_ASSERT(u->vex_op == 0xc5);
+          index = 0x1 | ((u->vex_b1 & 0x3) << 2);
+      }
+  }
+  return decode_ext(u, u->le->table[index]);
 }
 
 
@@ -1147,7 +2587,7 @@ decode_ext(struct ud *u, uint16_t ptr)
 {
   uint8_t idx = 0;
   if ((ptr & 0x8000) == 0) {
-    return decode_insn(u, ptr); 
+	return decode_insn(u, ptr);
   }
   u->le = &ud_lookup_table_list[(~0x8000 & ptr)];
   if (u->le->type == UD_TAB__OPC_3DNOW) {
@@ -1171,7 +2611,7 @@ decode_ext(struct ud *u, uint16_t ptr)
     case UD_TAB__OPC_ASIZE:
       idx = eff_adr_mode(u->dis_mode, u->pfx_adr) / 32;
       break;
-    case UD_TAB__OPC_X87:
+	case UD_TAB__OPC_X87:
       idx = modrm(u) - 0xC0;
       break;
     case UD_TAB__OPC_VENDOR:
@@ -1185,24 +2625,33 @@ decode_ext(struct ud *u, uint16_t ptr)
       }
       break;
     case UD_TAB__OPC_RM:
-      idx = MODRM_RM(modrm(u));
+	  idx = MODRM_RM(modrm(u));
       break;
-    case UD_TAB__OPC_REG:
-      idx = MODRM_REG(modrm(u));
-      break;
+	case UD_TAB__OPC_REG:
+	  idx = MODRM_REG(modrm(u));
+	  break;
     case UD_TAB__OPC_SSE:
-      return decode_ssepfx(u);
-    case UD_TAB__OPC_VEX:
-      return decode_vex(u);
+	  return decode_ssepfx(u);
+	case UD_TAB__OPC_VEX:
+	{
+		// if we have an XOP inst, test the map is < 8 then this is a POP not an XOP instruction.
+		if( (inp_curr( u ) == 0x8F) && (( inp_peek( u ) & 0x1f ) < 8) )
+		{
+			// table 0 in the VEX tables is where we encoded the POP with
+			// <opc>/vex=10 /reg=0</opc>
+			return decode_ext( u, u->le->table[0] );
+		}
+		return decode_vex(u);
+	}
     case UD_TAB__OPC_VEX_W:
-      idx = vex_w(u);
+	  idx = vex_w(u);
       break;
     case UD_TAB__OPC_VEX_L:
       idx = vex_l(u);
       break;
     case UD_TAB__OPC_TABLE:
       inp_next(u);
-      return decode_opcode(u);
+	  return decode_opcode(u);
     default:
       UD_ASSERT(!"not reached");
       break;
@@ -1216,9 +2665,12 @@ static int
 decode_opcode(struct ud *u)
 {
   uint16_t ptr;
+
   UD_ASSERT(u->le->type == UD_TAB__OPC_TABLE);
   UD_RETURN_ON_ERROR(u);
+
   ptr = u->le->table[inp_curr(u)];
+
   return decode_ext(u, ptr);
 }
 
@@ -1239,7 +2691,7 @@ ud_decode(struct ud *u)
   /* Handle decode error. */
   if (u->error) {
     /* clear out the decode data. */
-    clear_insn(u);
+	clear_insn(u);
     /* mark the sequence of bytes as invalid. */
     u->itab_entry = &ud_itab[0]; /* entry 0 is invalid */
     u->mnemonic = u->itab_entry->mnemonic;
@@ -1249,7 +2701,7 @@ ud_decode(struct ud *u)
      * should be spewed out?
      */
     if ( !P_SEG( u->itab_entry->prefix ) && 
-            u->operand[0].type != UD_OP_MEM &&
+			u->operand[0].type != UD_OP_MEM &&
             u->operand[1].type != UD_OP_MEM )
         u->pfx_seg = 0;
 

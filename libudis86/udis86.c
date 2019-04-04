@@ -23,7 +23,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
+#include <string.h>
 #include "udint.h"
 #include "extern.h"
 #include "decode.h"
@@ -340,6 +340,20 @@ ud_lookup_mnemonic(enum ud_mnemonic_code c)
   }
 }
 
+/* =============================================================================
+ * ud_lookup_eflags
+ *    Looks up eflags information structure
+ *    Returns NULL if invalid.
+ * =============================================================================
+ */
+const struct ud_flags* ud_lookup_flags(struct ud *u)
+{
+  if (u == NULL || u->itab_entry == NULL) {
+    return NULL;
+  } else {
+	return &u->itab_entry->flags;
+  }
+}
 
 /* 
  * ud_inp_init
