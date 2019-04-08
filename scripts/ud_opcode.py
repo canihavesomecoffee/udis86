@@ -323,7 +323,7 @@ class UdOpcodeTables(object):
         self.root       = self.newTable('opctbl')
 
         if os.getenv("UD_OPCODE_DEBUG"):
-            self._logFh = open("c:\\users\\steve\\desktop\\opcodeTables.log", "w")
+            self._logFh = open("opcodeTables.log", "w")
 
         # add an invalid instruction entry without any mapping
         # in the opcode tables.
