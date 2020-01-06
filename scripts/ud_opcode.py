@@ -179,6 +179,7 @@ class UdOpcodeTable:
     def __init__(self, typ):
         assert typ in self._TableInfo
         self._typ     = typ
+        self._limit   = 0
         self._entries = {}
 
 
@@ -190,6 +191,12 @@ class UdOpcodeTable:
 
     def numEntries(self):
         return len(self._entries.keys())
+
+    def setLimit(self, l):
+        self._limit = l
+
+    def limit(self):
+        return self._limit;
 
     def label(self):
         return self._TableInfo[self._typ]['label']

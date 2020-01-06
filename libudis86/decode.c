@@ -346,7 +346,14 @@ static int resolve_mnemonic( struct ud* u )
 	if( u->mnemonic == UD_I3dnow )
 	{
 		// resolve 3dnow weirdness.
-		u->mnemonic = ud_itab[ u->le->table[ inp_curr( u )  ] ].mnemonic;
+		uint8_t idx = inp_curr( u );
+
+		if( idx > u->le->limit ) {
+			UDERR(u, "out of bounds table idx\n");
+			return -1;
+		}
+
+		u->mnemonic = ud_itab[ u->le->table[idx] ].mnemonic;
 	}
 	else if( u->mnemonic == UD_Iswapgs )
 	{
@@ -2472,15 +2479,25 @@ decode_insn(struct ud *u, uint16_t ptr)
 static UD_INLINE int
 decode_3dnow(struct ud* u)
 {
+  uint8_t idx;
   uint16_t ptr;
   UD_ASSERT(u->le->type == UD_TAB__OPC_3DNOW);
   UD_ASSERT(u->le->table[0xc] != 0);
+  if( 0xc > u->le->limit ) {
+	UDERR(u, "out of bounds table idx\n");
+	return -1;
+  }
   decode_insn(u, u->le->table[0xc]);
   inp_next(u); 
   if (u->error) {
     return -1;
   }
-  ptr = u->le->table[inp_curr(u)]; 
+  idx = inp_curr(u);
+  if( idx > u->le->limit ) {
+	UDERR(u, "out of bounds table idx\n");
+	return -1;
+  }
+  ptr = u->le->table[idx];
   UD_ASSERT((ptr & 0x8000) == 0);
   u->mnemonic = ud_itab[ptr].mnemonic;
   return 0;
@@ -2502,12 +2519,16 @@ decode_ssepfx(struct ud *u)
     pfx = u->pfx_opr;
   }
   idx = ((pfx & 0xf) + 1) / 2;
+  if( idx > u->le->limit ) {
+	UDERR(u, "out of bounds table idx\n");
+	return -1;
+  }
   if (u->le->table[idx] == 0) {
-    idx = 0;
+	idx = 0;
   }
   if (idx && u->le->table[idx] != 0) {
     /*
-     * "Consume" the prefix as a part of the opcode, so it is no
+	 * "Consume" the prefix as a part of the opcode, so it is no
      * longer exported as an instruction prefix.
      */
     u->pfx_str = 0;
@@ -2527,10 +2548,10 @@ decode_ssepfx(struct ud *u)
 static int
 decode_vex(struct ud *u)
 {
-  uint8_t index;
+  uint8_t idx;
   if (u->dis_mode != 64 && MODRM_MOD(inp_peek(u)) != 0x3)
   {
-      index = 0;
+	  idx = 0;
   }
   else
   {
@@ -2550,11 +2571,11 @@ decode_vex(struct ud *u)
 			  // see ud_opcode.py:93
 			  pp = u->vex_b2 & 0x3;
 			  if( m == 8 )
-				index = (pp << 2) | 0x10;
+				idx = (pp << 2) | 0x10;
 			  else if( m == 9 )
-				index = (pp << 2) | 0x14;
+				idx = (pp << 2) | 0x14;
 			  else
-				index = (pp << 2) | 0x18;
+				idx = (pp << 2) | 0x18;
           }
           else if (m == 0 || m > 3)
           {
@@ -2563,17 +2584,23 @@ decode_vex(struct ud *u)
 		  else
 		  {
 			  pp = u->vex_b2 & 0x3;
-			  index = (pp << 2) | m;
+			  idx = (pp << 2) | m;
 		  }
       }
       else
       {
           /* 2-byte vex */
           UD_ASSERT(u->vex_op == 0xc5);
-          index = 0x1 | ((u->vex_b1 & 0x3) << 2);
-      }
+		  idx = 0x1 | ((u->vex_b1 & 0x3) << 2);
+	  }
   }
-  return decode_ext(u, u->le->table[index]);
+
+  if( idx > u->le->limit ) {
+	UDERR(u, "out of bounds table idx\n");
+	return -1;
+  }
+
+  return decode_ext(u, u->le->table[idx]);
 }
 
 
@@ -2616,10 +2643,14 @@ decode_ext(struct ud *u, uint16_t ptr)
       break;
     case UD_TAB__OPC_VENDOR:
       if (u->vendor == UD_VENDOR_ANY) {
-        /* choose a valid entry */
-        idx = (u->le->table[idx] != 0) ? 0 : 1;
+		/* choose a valid entry */
+		if( idx > u->le->limit ) {
+		  UDERR(u, "out of bounds table idx\n");
+		  return -1;
+		}
+		idx = (u->le->table[idx] != 0) ? 0 : 1;
       } else if (u->vendor == UD_VENDOR_AMD) {
-        idx = 0;
+		idx = 0;
       } else {
         idx = 1;
       }
@@ -2657,6 +2688,11 @@ decode_ext(struct ud *u, uint16_t ptr)
       break;
   }
 
+  if( idx > u->le->limit ) {
+	UDERR(u, "out of bounds table idx\n");
+	return -1;
+  }
+
   return decode_ext(u, u->le->table[idx]);
 }
 
@@ -2665,11 +2701,19 @@ static int
 decode_opcode(struct ud *u)
 {
   uint16_t ptr;
+  uint8_t idx;
 
   UD_ASSERT(u->le->type == UD_TAB__OPC_TABLE);
   UD_RETURN_ON_ERROR(u);
 
-  ptr = u->le->table[inp_curr(u)];
+  idx = inp_curr(u);
+
+  if( idx > u->le->limit ) {
+	UDERR(u, "out of bounds table idx\n");
+	return -1;
+  }
+
+  ptr = u->le->table[idx];
 
   return decode_ext(u, ptr);
 }

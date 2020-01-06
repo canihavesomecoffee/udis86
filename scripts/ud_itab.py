@@ -271,6 +271,7 @@ class UdItabGenerator:
         if not isGlobal:
             self.ItabC.write('static ')
         self.ItabC.write( "const uint16_t %s[] = {\n" % self.getTableName(table))
+        limit = 0
         for i in range(table.size()):
             if i > 0 and i % 4 == 0: 
                 self.ItabC.write( "\n" )
@@ -279,10 +280,14 @@ class UdItabGenerator:
             e = table.entryAt(i)
             if e is None:
                 self.ItabC.write("%12s," % "INVALID")
+                limit += 1
             elif isinstance(e, UdOpcodeTable):
                 self.ItabC.write("%12s," % ("GROUP(%d)" % self.getTableIndex(e)))
+                limit += 1
             elif isinstance(e, UdInsnDef):
                 self.ItabC.write("%12s," % self.getInsnIndex(e))
+                limit += 1
+        table.setLimit(limit - 1)
         self.ItabC.write( "\n" )
         self.ItabC.write( "};\n" )
 
@@ -297,11 +302,14 @@ class UdItabGenerator:
         self.ItabC.write( "\n\n"  );
         self.ItabC.write( "struct ud_lookup_table_list_entry ud_lookup_table_list[] = {\n" )
         for table in self.tables.getTableList():
+            if(table.limit() > 255):
+                print("error: invalid table limit: %d \n" % table.limit() )
             f0 = self.getTableName(table) + ","
             f1 = table.label() + ","
-            f2 = "\"%s\"" % table.meta()
-            self.ItabC.write("    /* %03d */ { %s %s %s },\n" % 
-                             (self.getTableIndex(table), f0, f1, f2))
+            f2 = "\"%s\", " % table.meta()
+            f3 = "%d" % table.limit()
+            self.ItabC.write("    /* %03d */ { %s %s %s %s },\n" % 
+                             (self.getTableIndex(table), f0, f1, f2, f3))
         self.ItabC.write( "};" )
 
 

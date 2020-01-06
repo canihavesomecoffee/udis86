@@ -199,6 +199,7 @@ struct ud_lookup_table_list_entry {
     const uint16_t *table;
     enum ud_table_type type;
     const char *meta;
+	const uint8_t limit;
 };
      
 extern struct ud_itab_entry ud_itab[];
