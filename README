@@ -22,8 +22,9 @@ libudis86
     System instructions.
   o Supported ISA extensions:
     - MMX, FPU (x87), AMD 3DNow
-    - SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, AES,
-    - AMD-V, INTEL-VMX, SMX
+    - SSE, SSE2, SSE3, SSSE3, SSE4.1, SSE4.2, SSE4a
+    - AMD-V, INTEL-VMX, SMX, AVX, BMI, FMA4, FMA, F16C
+    - ADX, MPX, SGX, RTM, AES, SHA, CET  
   o Instructions are defined in an XML document, with opcode
     tables generated for performance.
   o Supports output in both INTEL (NASM) as well as AT&T (GNU as) style
