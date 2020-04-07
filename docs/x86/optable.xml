@@ -4685,35 +4685,21 @@
             <opc>c9</opc>
         </def>
     </instruction>
-
+	
     <instruction>
         <mnemonic>lfence</mnemonic><flags source='manual'>____________</flags>
         <def>
-            <opc>0f ae /reg=5 /mod=11 /rm=0</opc>
-        </def>
-        <def>
-            <opc>0f ae /reg=5 /mod=11 /rm=1</opc>
-        </def>
-        <def>
-            <opc>0f ae /reg=5 /mod=11 /rm=2</opc>
-        </def>
-        <def>
-            <opc>0f ae /reg=5 /mod=11 /rm=3</opc>
-        </def>
-        <def>
-            <opc>0f ae /reg=5 /mod=11 /rm=4</opc>
-        </def>
-        <def>
-            <opc>0f ae /reg=5 /mod=11 /rm=5</opc>
-        </def>
-        <def>
-            <opc>0f ae /reg=5 /mod=11 /rm=6</opc>
-        </def>
-        <def>
-            <opc>0f ae /reg=5 /mod=11 /rm=7</opc>
+            <opc>0f ae /mod=11 /reg=5</opc>
         </def>
     </instruction>
-
+	
+    <instruction>
+        <mnemonic>mfence</mnemonic>
+        <def>
+            <opc>0f ae /mod=11 /reg=6</opc>
+        </def>
+    </instruction>
+	
     <instruction>
         <mnemonic>lgdt</mnemonic><flags source='scrape'>____________</flags>
         <def>
@@ -4873,34 +4859,6 @@
             <opc>/sse=f3 0f 5f</opc>
             <opr>V H MdU</opr><access source='scrape'>W R R</access>
             <cpuid>sse avx</cpuid>
-        </def>
-    </instruction>
-
-    <instruction>
-        <mnemonic>mfence</mnemonic>
-        <def>
-            <opc>0f ae /reg=6 /mod=11 /rm=0</opc>
-        </def>
-        <def>
-            <opc>0f ae /reg=6 /mod=11 /rm=1</opc>
-        </def>
-        <def>
-            <opc>0f ae /reg=6 /mod=11 /rm=2</opc>
-        </def>
-        <def>
-            <opc>0f ae /reg=6 /mod=11 /rm=3</opc>
-        </def>
-        <def>
-            <opc>0f ae /reg=6 /mod=11 /rm=4</opc>
-        </def>
-        <def>
-            <opc>0f ae /reg=6 /mod=11 /rm=5</opc>
-        </def>
-        <def>
-            <opc>0f ae /reg=6 /mod=11 /rm=6</opc>
-        </def>
-        <def>
-            <opc>0f ae /reg=6 /mod=11 /rm=7</opc>
         </def>
     </instruction>
 
@@ -5649,7 +5607,7 @@
         </def>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
-            <opc>0f 1e</opc>
+            <opc>0f 1e /mod=!11</opc>
             <opr>M</opr><access source='scrape'>R</access>
         </def>
         <def>
@@ -14646,4 +14604,150 @@
         </def>
     </instruction>
 	
+    <instruction>
+        <mnemonic>incsspd</mnemonic>
+		<vendor>intel</vendor>
+		<cpuid>cet</cpuid>
+        <def>
+            <pfx>aso oso rexw rexr rexx rexb</pfx>
+            <opc>/sse=F3 0F AE /mod=11 /reg=5 /o=32</opc>
+            <opr>Ev</opr><access source='scrape'>R</access>
+        </def>
+    </instruction>
+	
+    <instruction>
+        <mnemonic>incsspq</mnemonic>
+		<vendor>intel</vendor>
+		<cpuid>cet</cpuid>
+        <def>
+            <pfx>aso oso rexw rexr rexx rexb</pfx>
+            <opc>/sse=F3 0F AE /mod=11 /reg=5 /o=64</opc>
+            <opr>Ev</opr><access source='scrape'>R</access>
+        </def>
+    </instruction>
+	
+    <instruction>
+        <mnemonic>rdsspd</mnemonic>
+		<vendor>intel</vendor>
+		<cpuid>cet</cpuid>
+        <def>
+            <pfx>aso oso rexw rexr rexx rexb</pfx>
+            <opc>/sse=F3 0F 1E /mod=11 /reg=1 /o=32</opc>
+            <opr>Ev</opr><access source='scrape'>R</access>
+        </def>
+    </instruction>
+	
+    <instruction>
+        <mnemonic>rdsspq</mnemonic>
+		<vendor>intel</vendor>
+		<cpuid>cet</cpuid>
+        <def>
+            <pfx>aso oso rexw rexr rexx rexb</pfx>
+            <opc>/sse=F3 0F 1E /mod=11 /reg=1 /o=64</opc>
+            <opr>Ev</opr><access source='scrape'>R</access>
+        </def>
+    </instruction>
+	
+    <instruction>
+        <mnemonic>saveprevssp</mnemonic>
+		<vendor>intel</vendor>
+		<cpuid>cet</cpuid>
+        <def>
+			<opc>/sse=F3 0F 01 /mod=11 /reg=5 /rm=2</opc>
+        </def>
+    </instruction>
+	
+    <instruction>
+        <mnemonic>rstorssp</mnemonic>
+		<vendor>intel</vendor>
+		<cpuid>cet</cpuid>
+        <def>
+			<pfx>aso oso rexw rexr rexx rexb</pfx>
+			<opc>/sse=F3 0F 01 /mod=!11 /reg=5</opc>
+            <opr>M</opr><access source='scrape'>W</access>
+        </def>
+    </instruction>
+	
+    <instruction>
+        <mnemonic>wrssd</mnemonic>
+		<vendor>intel</vendor>
+		<cpuid>cet</cpuid>
+        <def>	
+            <pfx>aso oso rexr rexw rexx rexb</pfx>
+            <opc>0f 38 f6 /o=32</opc>
+            <opr>Mv Gv</opr><access source='scrape'>W R</access>
+        </def>
+    </instruction>	
+	
+    <instruction>
+        <mnemonic>wrssq</mnemonic>
+		<vendor>intel</vendor>
+		<cpuid>cet</cpuid>
+        <def>	
+            <pfx>aso oso rexr rexw rexx rexb</pfx>
+            <opc>0f 38 f6 /o=64</opc>
+            <opr>Mv Gv</opr><access source='scrape'>W R</access>
+        </def>
+    </instruction>
+	
+    <instruction>
+        <mnemonic>wrussd</mnemonic>
+		<vendor>intel</vendor>
+		<cpuid>cet</cpuid>
+        <def>	
+            <pfx>aso oso rexr rexw rexx rexb</pfx>
+            <opc>/sse=66 0f 38 f5 /o=32</opc>
+            <opr>Mv Gv</opr><access source='scrape'>W R</access>
+        </def>
+    </instruction>	
+	
+    <instruction>
+        <mnemonic>wrussq</mnemonic>
+		<vendor>intel</vendor>
+		<cpuid>cet</cpuid>
+        <def>	
+            <pfx>aso oso rexr rexw rexx rexb</pfx>
+            <opc>/sse=66 0f 38 f5 /o=64</opc>
+            <opr>Mv Gv</opr><access source='scrape'>W R</access>
+        </def>
+    </instruction>
+	
+    <instruction>
+        <mnemonic>setssbsy</mnemonic>
+		<vendor>intel</vendor>
+		<cpuid>cet</cpuid>
+        <def>
+			<opc>/sse=f3 0f 01 /mod=11 /reg=5 /rm=0</opc>
+        </def>
+    </instruction>
+	
+    <instruction>
+        <mnemonic>clrssbsy</mnemonic>
+		<vendor>intel</vendor>
+		<cpuid>cet</cpuid>
+        <def>
+            <pfx>aso oso rexw rexr rexx rexb</pfx>
+			<opc>/sse=f3 0f ae /mod=11 /reg=6 /m=64</opc>
+            <opr>M</opr><access source='scrape'>RW</access>	
+        </def>
+    </instruction>
+
+    <instruction>
+        <mnemonic>endbr64</mnemonic>
+		<vendor>intel</vendor>
+		<cpuid>cet</cpuid>
+        <def>
+			<opc>/sse=f3 0f 1e /mod=11 /reg=7 /rm=2</opc>
+        </def>
+    </instruction>
+	
+    <instruction>
+        <mnemonic>endbr32</mnemonic>
+		<vendor>intel</vendor>
+		<cpuid>cet</cpuid>
+        <def>
+			<opc>/sse=f3 0f 1e /mod=11 /reg=7 /rm=3</opc>
+        </def>
+    </instruction>
+
 </x86optable>
