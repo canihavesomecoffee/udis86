@@ -26,6 +26,15 @@
 #ifndef UD_TYPES_H
 #define UD_TYPES_H
 
+#ifdef KERNEL
+# include <stdarg.h>
+# include <stdint.h>
+# include <kern/misc_protos.h>
+# ifndef __UD_STANDALONE__
+#   define __UD_STANDALONE__ 1
+# endif
+#endif
+
 #ifdef __KERNEL__
   /* 
    * -D__KERNEL__ is automatically passed on the command line when
