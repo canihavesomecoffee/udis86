@@ -594,6 +594,13 @@
     </instruction>
 
     <instruction>
+        <mnemonic>clac</mnemonic>
+        <def>
+            <opc>0f 01 /reg=1 /mod=11 /rm=2</opc>
+        </def>
+    </instruction>
+
+    <instruction>
         <mnemonic>clc</mnemonic>
         <eflags>_____R_____</eflags>
         <def>
@@ -8653,6 +8660,13 @@
     </instruction>
 
     <instruction>
+        <mnemonic>stac</mnemonic>
+        <def>
+            <opc>0f 01 /reg=1 /mod=11 /rm=3</opc>
+        </def>
+    </instruction>
+
+    <instruction>
         <mnemonic>stc</mnemonic>
         <eflags>_____S_____</eflags>
         <def>
@@ -9086,6 +9100,16 @@
     </instruction>
 
     <instruction>
+        <mnemonic>rdseed</mnemonic>
+        <def>
+            <pfx>oso rexr rexw rexx rexb</pfx>
+            <opc>0f c7 /mod=11 /reg=7</opc>
+            <opr>R</opr>
+        </def>
+        <cpuid>rdseed</cpuid>
+    </instruction>
+
+    <instruction>
         <mnemonic>vmclear</mnemonic>
         <vendor>intel</vendor>
         <def>
@@ -9493,6 +9517,14 @@
             <opc>0f ae /reg=4 /mod=!11</opc>
             <opr>M</opr>
         </def>
+    </instruction>
+    <instruction>
+        <mnemonic>xsaveopt</mnemonic>
+    <def>
+        <pfx>aso rexw rexr rexx rexb</pfx>
+        <opc>0f ae /reg=6 /mod=!11</opc>
+        <opr>M</opr>
+    </def>
     </instruction>
 
     <instruction>
