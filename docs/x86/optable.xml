@@ -5548,6 +5548,8 @@
         <first_operand_access>W</first_operand_access>
         <implicit_register_use>rsi</implicit_register_use>
         <implicit_register_def>rsi</implicit_register_def>
+        <implicit_register_use>rdi</implicit_register_use>
+        <implicit_register_def>rdi</implicit_register_def>
         <eflags>________T__</eflags>
         <def>
             <pfx>rep seg</pfx>
@@ -5560,6 +5562,8 @@
         <first_operand_access>W</first_operand_access>
         <implicit_register_use>rsi</implicit_register_use>
         <implicit_register_def>rsi</implicit_register_def>
+        <implicit_register_use>rdi</implicit_register_use>
+        <implicit_register_def>rdi</implicit_register_def>
         <eflags>________T__</eflags>
         <def>
             <pfx>rep seg oso rexw</pfx>
@@ -5570,10 +5574,12 @@
     <instruction>
         <mnemonic>movsd</mnemonic>
         <first_operand_access>W</first_operand_access>
-        <implicit_register_use>rsi</implicit_register_use>
-        <implicit_register_def>rsi</implicit_register_def>
         <eflags>________T__</eflags>
         <def>
+            <implicit_register_use>rsi</implicit_register_use>
+            <implicit_register_def>rsi</implicit_register_def>
+            <implicit_register_use>rdi</implicit_register_use>
+            <implicit_register_def>rdi</implicit_register_def>
             <pfx>rep seg oso rexw</pfx>
             <opc>a5 /o=32</opc>
         </def>
@@ -5596,6 +5602,8 @@
         <first_operand_access>W</first_operand_access>
         <implicit_register_use>rsi</implicit_register_use>
         <implicit_register_def>rsi</implicit_register_def>
+        <implicit_register_use>rdi</implicit_register_use>
+        <implicit_register_def>rdi</implicit_register_def>
         <eflags>________T__</eflags>
         <def>
             <pfx>rep seg oso rexw</pfx>
