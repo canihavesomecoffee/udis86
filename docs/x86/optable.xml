@@ -3176,7 +3176,7 @@
             <opc>d9 /mod=11 /x87=10</opc>
         </def>
     </instruction>
-	
+
     <instruction>
         <mnemonic>fndisi</mnemonic>
         <cpuid>X87</cpuid>
@@ -3184,7 +3184,7 @@
             <opc>db /mod=11 /x87=21</opc>
         </def>
     </instruction>
-	
+
     <instruction>
         <mnemonic>fneni</mnemonic>
         <cpuid>X87</cpuid>
@@ -3192,7 +3192,7 @@
             <opc>db /mod=11 /x87=20</opc>
         </def>
     </instruction>
-	
+
     <instruction>
         <mnemonic>fnsetpm</mnemonic>
         <cpuid>X87</cpuid>
@@ -3250,7 +3250,7 @@
             <opr>M</opr>
         </def>
     </instruction>
-	
+
     <instruction>
         <mnemonic>frstpm</mnemonic>
         <cpuid>X87</cpuid>
@@ -6418,7 +6418,7 @@
             <opr>V Ed Ib</opr>
             <cpuid>sse4.1</cpuid>
         </def>
- 
+
         <def>
             <pfx>aso rexw rexr rexx rexb</pfx>
             <opc>/sse=66 0f 3a 22 /o=32</opc>
@@ -9629,7 +9629,7 @@
     </instruction>
 
     <!--
-         SSE 2 
+         SSE 2
      -->
 
     <instruction>
@@ -11142,6 +11142,56 @@
     </instruction>
 
     <instruction>
+        <mnemonic>vpbroadcastb</mnemonic>
+        <def>
+            <pfx>aso rexr rexx rexb vexl</pfx>
+            <opc>/vex=66_0f38 78</opc>
+            <opr>V H</opr>
+            <cpuid>avx</cpuid>
+        </def>
+    </instruction>
+
+    <instruction>
+        <mnemonic>vpbroadcastw</mnemonic>
+        <def>
+            <pfx>aso rexr rexx rexb vexl</pfx>
+            <opc>/vex=66_0f38 79</opc>
+            <opr>V H</opr>
+            <cpuid>avx</cpuid>
+        </def>
+    </instruction>
+
+    <instruction>
+        <mnemonic>vpbroadcastd</mnemonic>
+        <def>
+            <pfx>aso rexr rexx rexb vexl</pfx>
+            <opc>/vex=66_0f38 58</opc>
+            <opr>V H</opr>
+            <cpuid>avx</cpuid>
+        </def>
+    </instruction>
+
+    <instruction>
+        <mnemonic>vpbroadcastq</mnemonic>
+        <def>
+            <pfx>aso rexr rexx rexb vexl</pfx>
+            <opc>/vex=66_0f38 59</opc>
+            <opr>V H</opr>
+            <cpuid>avx</cpuid>
+        </def>
+    </instruction>
+
+    <instruction>
+        <mnemonic>vpbroadcast128</mnemonic>
+        <def>
+            <pfx>aso rexr rexx rexb vexl</pfx>
+            <opc>/vex=66_0f38 5A</opc>
+            <opr>MqU H</opr>
+            <cpuid>avx</cpuid>
+        </def>
+    </instruction>
+
+    <instruction>
         <mnemonic>vpsllw</mnemonic>
         <first_operand_access>W</first_operand_access>
         <def>
@@ -11191,5 +11241,5 @@
             <cpuid>avx</cpuid>
         </def>
     </instruction>
- 
+
 </x86optable>
