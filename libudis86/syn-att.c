@@ -153,8 +153,19 @@ ud_translate_att(struct ud *u)
   }
   }
 
+  if (u->pfx_xacquire) {
+	ud_asmprintf(u, "xacquire ");
+  }
+  else if (u->pfx_xrelease) {
+	ud_asmprintf(u, "xrelease ");
+  }
+
   if (u->pfx_lock)
-    ud_asmprintf(u,  "lock ");
+	ud_asmprintf(u,  "lock ");
+
+  if (u->pfx_bnd)
+	ud_asmprintf(u,  "bnd ");
+
   if (u->pfx_rep) {
     ud_asmprintf(u, "rep ");
   } else if (u->pfx_repe) {

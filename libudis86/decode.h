@@ -94,11 +94,18 @@ enum ud_operand_code {
 
     OP_V,      OP_W,      OP_Q,       OP_P, 
     OP_U,      OP_N,      OP_MU,      OP_H,
-    OP_L,
+	OP_HR,     OP_L,      OP_XS,      OP_XSX,
+	OP_XSY,
 
-    OP_R,      OP_C,      OP_D,       
+    OP_R,      OP_C,      OP_D,       OP_B,
+	OP_BM,     OP_BMR,
 
-    OP_MR
+	OP_K,      OP_KM,     OP_KH,
+
+	OP_MR,
+
+	OP_IMP_XMM0
+
 } UD_ATTR_PACKED;
 
 
@@ -110,7 +117,7 @@ enum ud_operand_code {
  *  that they maybe used interchangeably in the internals. Modifying them
  *  will most certainly break things!
  */
-typedef uint16_t ud_operand_size_t;
+typedef uint32_t ud_operand_size_t;
 
 #define SZ_NA  0
 #define SZ_Z   1
@@ -123,37 +130,41 @@ typedef uint16_t ud_operand_size_t;
 #define SZ_D   32
 #define SZ_Q   64
 #define SZ_T   80
-#define SZ_O   12
-#define SZ_DQ  128 /* double quad */
-#define SZ_QQ  256 /* quad quad */
+#define SZ_O   128
+#define SZ_DQ  128
+#define SZ_QQ  256
+#define SZ_ZQ  512
 
 /*
  * Complex size types; that encode sizes for operands of type MR (memory or
  * register); for internal use only. Id space above 256.
  */
-#define SZ_BD  ((SZ_B << 8) | SZ_D)
-#define SZ_BV  ((SZ_B << 8) | SZ_V)
-#define SZ_WD  ((SZ_W << 8) | SZ_D)
-#define SZ_WV  ((SZ_W << 8) | SZ_V)
-#define SZ_WY  ((SZ_W << 8) | SZ_Y)
-#define SZ_DY  ((SZ_D << 8) | SZ_Y)
-#define SZ_WO  ((SZ_W << 8) | SZ_O)
-#define SZ_DO  ((SZ_D << 8) | SZ_O)
-#define SZ_QO  ((SZ_Q << 8) | SZ_O)
-
+#define SZ_BD  ((SZ_B << 16)  | SZ_D)
+#define SZ_BV  ((SZ_B << 16)  | SZ_V)
+#define SZ_WD  ((SZ_W << 16)  | SZ_D)
+#define SZ_WV  ((SZ_W << 16)  | SZ_V)
+#define SZ_WY  ((SZ_W << 16)  | SZ_Y)
+#define SZ_DY  ((SZ_D << 16)  | SZ_Y)
+#define SZ_BO  ((SZ_B << 16)  | SZ_O)
+#define SZ_WO  ((SZ_W << 16)  | SZ_O)
+#define SZ_DO  ((SZ_D << 16)  | SZ_O)
+#define SZ_QO  ((SZ_Q << 16)  | SZ_O)
+#define SZ_DQO ((SZ_DQ << 16) | SZ_O)
+#define SZ_QQO ((SZ_QQ << 16) | SZ_O)
+#define SZ_ZQO ((SZ_ZQ << 16) | SZ_O)
 
 /* resolve complex size type.
  */
 static UD_INLINE ud_operand_size_t
 Mx_mem_size(ud_operand_size_t size)
 {
-  return (size >> 8) & 0xff;
+  return (size >> 16) & 0xffff;
 }
 
 static UD_INLINE ud_operand_size_t
 Mx_reg_size(ud_operand_size_t size)
 {
-  return size & 0xff;
+  return size & 0xffff;
 }
 
 /* A single operand of an entry in the instruction table. 
@@ -182,12 +193,17 @@ struct ud_itab_entry
   struct ud_eflags              eflags;
   enum ud_type                  implicit_register_uses[32];
   enum ud_type                  implicit_register_defs[32];
+  uint8_t                       access1;
+  uint8_t                       access2;
+  uint8_t                       access3;
+  uint8_t                       access4;
 };
 
 struct ud_lookup_table_list_entry {
     const uint16_t *table;
     enum ud_table_type type;
     const char *meta;
+	const uint8_t limit;
 };
      
 extern struct ud_itab_entry ud_itab[];

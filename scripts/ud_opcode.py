@@ -33,21 +33,15 @@ def itemslist(dict):
     except AttributeError:
         return list(dict.items()) # python 3.x
 
-# Some compatibility stuff for supporting python 2.x as well as python 3.x
-def itemslist(dict):
-    try:
-        return dict.iteritems() # python 2.x
-    except AttributeError:
-        return list(dict.items()) # python 3.x
-
 class UdInsnDef:
     """An x86 instruction definition
     """
     def __init__(self, **insnDef):
         self.mnemonic       = insnDef['mnemonic']
-        self.eflags         = insnDef['eflags']
+        self.eflags         = insnDef['eflags'] if 'eflags' in insnDef else "____________"
         self.firstOpAccess  = insnDef['firstOpAccess']
         self.secondOpAccess = insnDef['secondOpAccess']
+        self.access         = insnDef['access']
         self.implicitRegUse = insnDef['implicitRegUse']
         self.implicitRegDef = insnDef['implicitRegDef']
         self.prefixes       = insnDef['prefixes']
@@ -125,6 +119,20 @@ class UdOpcodeTable:
             'f2_0f'     : 0xd, 
             'f2_0f38'   : 0xe, 
             'f2_0f3a'   : 0xf,
+            # XOP (3 byte VEX encoding)...
+            '08'        : 0x10,
+            '66_08'     : 0x11,
+            'f3_08'     : 0x12,
+            'f2_08'     : 0x13,
+            '09'        : 0x14,
+            '66_09'     : 0x15,
+            'f3_09'     : 0x16,
+            'f2_09'     : 0x17,
+            '0a'        : 0x18,
+            '66_0a'     : 0x19,
+            'f3_0a'     : 0x1a,
+            'f2_0a'     : 0x1b,
+            '10'        : 0,
         }
         return vexOpcExtMap[v]
 
@@ -141,8 +149,8 @@ class UdOpcodeTable:
         '/mod'   : lambda v: 0 if v == '!11' else 1,
         # Mode extensions:
         # (16, 32, 64) => (00, 01, 02)
-        '/o'     : lambda v: (int(v) / 32),
-        '/a'     : lambda v: (int(v) / 32),
+        '/o'     : lambda v: int(int(v) / 32),
+        '/a'     : lambda v: int(int(v) / 32),
         # Disassembly mode 
         # (!64, 64)    => (00b, 01b)
         '/m'     : lambda v: 1 if v == '64' else 0,
@@ -151,8 +159,7 @@ class UdOpcodeTable:
         # f2   => 1
         # f3   => 2
         # 66   => 3
-        '/sse'   : lambda v: (0 if v == 'none'
-                                else (((int(v, 16) & 0xf) + 1) / 2)),
+        '/sse'   : lambda v: (0 if v == 'none' else int(((int(v, 16) & 0xf) + 1) / 2)),
         # AVX
         '/vex'   : lambda v: UdOpcodeTable.vex2idx(v),
         '/vexw'  : lambda v: 0 if v == '0' else 1,
@@ -174,7 +181,7 @@ class UdOpcodeTable:
         '/o'        : { 'label' : 'UD_TAB__OPC_OSIZE',   'size' : 3 },
         '/3dnow'    : { 'label' : 'UD_TAB__OPC_3DNOW',   'size' : 256 },
         '/vendor'   : { 'label' : 'UD_TAB__OPC_VENDOR',  'size' : 3 },
-        '/vex'      : { 'label' : 'UD_TAB__OPC_VEX',     'size' : 16 },
+        '/vex'      : { 'label' : 'UD_TAB__OPC_VEX',     'size' : 28 },
         '/vexw'     : { 'label' : 'UD_TAB__OPC_VEX_W',   'size' : 2 },
         '/vexl'     : { 'label' : 'UD_TAB__OPC_VEX_L',   'size' : 2 },
     }
@@ -183,6 +190,7 @@ class UdOpcodeTable:
     def __init__(self, typ):
         assert typ in self._TableInfo
         self._typ     = typ
+        self._limit   = 0
         self._entries = {}
 
 
@@ -194,6 +202,12 @@ class UdOpcodeTable:
 
     def numEntries(self):
         return len(self._entries.keys())
+
+    def setLimit(self, l):
+        self._limit = l
+
+    def limit(self):
+        return self._limit
 
     def label(self):
         return self._TableInfo[self._typ]['label']
@@ -213,7 +227,7 @@ class UdOpcodeTable:
         typ = UdOpcodeTable.getOpcodeTyp(opc)
         idx = UdOpcodeTable.getOpcodeIdx(opc)
         if self._typ != typ or idx in self._entries:
-            raise CollisionError()
+            raise UdOpcodeTable.CollisionError("%s <-> %s (%s) 2" % (self._typ, typ, opc))
         self._entries[idx] = obj
 
 
@@ -221,7 +235,7 @@ class UdOpcodeTable:
         typ = UdOpcodeTable.getOpcodeTyp(opc)
         idx = UdOpcodeTable.getOpcodeIdx(opc)
         if self._typ != typ:
-            raise UdOpcodeTable.CollisionError("%s <-> %s" % (self._typ, typ))
+            raise UdOpcodeTable.CollisionError("%s <-> %s (%s)" % (self._typ, typ, opc))
         return self._entries.get(idx, None)
 
     
@@ -326,14 +340,15 @@ class UdOpcodeTables(object):
         self.root       = self.newTable('opctbl')
 
         if os.getenv("UD_OPCODE_DEBUG"):
-            self._logFh     = open("opcodeTables.log", "w")
+            self._logFh = open("opcodeTables.log", "w")
 
         # add an invalid instruction entry without any mapping
         # in the opcode tables.
         self.invalidInsn = UdInsnDef(mnemonic="invalid",
-                                     eflags="___________",
+                                     eflags="____________",
                                      firstOpAccess="",
                                      secondOpAccess="",
+                                     access=[],
                                      implicitRegUse=[],
                                      implicitRegDef=[],
                                      opcodes=[],
@@ -409,7 +424,7 @@ class UdOpcodeTables(object):
 
         # Re-order vex
         if '/vex' in opcexts:
-            assert opcodes[0] == 'c4' or opcodes[0] == 'c5'
+            assert opcodes[0] == 'c4' or opcodes[0] == 'c5' or opcodes[0] == '8f'
             opcodes.insert(1, '/vex=' + opcexts['/vex'])
 
         # Add extensions. The order is important, and determines how
@@ -429,6 +444,7 @@ class UdOpcodeTables(object):
                          implicitRegDef = insnDef['implicitRegDef'],
                          prefixes = insnDef['prefixes'],
                          operands = insnDef['operands'],
+                         access   = insnDef['access'],
                          opcodes  = opcodes,
                          cpuid    = insnDef['cpuid'])
         try:
@@ -452,6 +468,21 @@ class UdOpcodeTables(object):
         opcodes  = []
         opcexts  = {}
 
+        if not insnDef['opcodes']:
+            self._mnemonics[insnDef['mnemonic']] = [UdInsnDef(mnemonic = insnDef['mnemonic'],
+                                                              flags = insnDef['eflags'],
+                                                              firstOpAccess = insnDef['firstOpAccess'],
+                                                              secondOpAccess = insnDef['secondOpAccess'],
+                                                              implicitRegUse = insnDef['implicitRegUse'],
+                                                              implicitRegDef = insnDef['implicitRegDef'],
+                                                              opcodes=[],
+                                                              cpuid=[],
+                                                              operands=[],
+                                                              access=[],
+                                                              prefixes=[]
+                                                              )]
+            return
+            
         # pack plain opcodes first, and collect opcode
         # extensions
         for opc in insnDef['opcodes']:
@@ -478,7 +509,8 @@ class UdOpcodeTables(object):
 
             # make sure the opcode definitions don't already include
             # the avx prefixes.
-            assert opcodes[0] not in ('c4', 'c5')
+            if len(opcodes) > 0:
+                assert opcodes[0] not in ('c4', 'c5')
 
             # An avx only instruction is defined by the /vex= opcode
             # extension. They do not include the c4 (long form) or
@@ -486,7 +518,10 @@ class UdOpcodeTables(object):
             # here we create the long form definition, and then patch
             # the table for c5 in a later stage.
             # Construct a long-form definition of the avx instruction
-            opcodes.insert(0, 'c4')
+            if 'xop' in insnDef['cpuid']:
+                opcodes.insert(0, '8f')
+            else:
+                opcodes.insert(0, 'c4')
         elif (opcodes[0] == '0f' and opcodes[1] != '0f' and
             '/sse' not in opcexts):
             # Make all 2-byte opcode form isntructions play nice with sse
@@ -495,8 +530,17 @@ class UdOpcodeTables(object):
 
         # legacy sse defs that get promoted to avx
         fn = self.addInsn
-        if 'avx' in insnDef['cpuid'] and '/sse' in opcexts:
-            fn = self.addSSE2AVXInsn
+        if 'avx' in insnDef['cpuid']:
+            if '/sse' in opcexts:
+                fn = self.addSSE2AVXInsn
+            else:
+                avx_operands = []
+                for o in insnDef['operands']:
+                    # make the operand size explicit: x
+                    if o in ('V', 'W', 'H', 'U', 'M' ):
+                        o = o + 'x'
+                    avx_operands.append(o)
+                insnDef['operands'] = avx_operands
 
         fn(mnemonic       = insnDef['mnemonic'],
            eflags         = insnDef['eflags'],
@@ -508,6 +552,7 @@ class UdOpcodeTables(object):
            opcodes        = opcodes,
            opcexts        = opcexts,
            operands       = insnDef['operands'],
+           access         = insnDef['access'],
            cpuid          = insnDef['cpuid'])
 
 
@@ -531,11 +576,20 @@ class UdOpcodeTables(object):
                                   if not e.startswith('/vex')])
         # strip out avx operands, preserving relative ordering
         # of remaining operands
-        sseoperands = [opr for opr in insnDef['operands']
-                        if opr not in ('H', 'L')]
+        sseoperands = [opr for opr in insnDef['operands'] if opr not in ('H', 'L')]
+
+        sseaccess = []
+
+        for idx in range(len(sseoperands)):
+            if idx+1 > len(insnDef['access']):
+                break
+            acc = insnDef['access'][idx]
+            sseaccess.append( acc )
+        
         # strip out avx prefixes
         sseprefixes = [pfx for pfx in insnDef['prefixes']
                         if not pfx.startswith('vex')]
+
         # strip out avx bits from cpuid
         ssecpuid    = [flag for flag in insnDef['cpuid']
                         if not flag.startswith('avx')]
@@ -550,6 +604,7 @@ class UdOpcodeTables(object):
                      opcodes        = sseopcodes,
                      opcexts        = sseopcexts,
                      operands       = sseoperands,
+                     access         = sseaccess,
                      cpuid          = ssecpuid)
 
         # AVX
@@ -572,9 +627,11 @@ class UdOpcodeTables(object):
         vexoperands = []
         for o in insnDef['operands']:
             # make the operand size explicit: x
-            if o in ('V', 'W', 'H', 'U'):
+            if o in ('V', 'W', 'H', 'U', 'M' ):
                 o = o + 'x'
             vexoperands.append(o)
+            
+        vexaccess   = insnDef['access']
         vexcpuid    = [flag for flag in insnDef['cpuid']
                         if not flag.startswith('sse')]
 
@@ -588,6 +645,7 @@ class UdOpcodeTables(object):
                      opcodes        = vexopcodes,
                      opcexts        = vexopcexts,
                      operands       = vexoperands,
+                     access         = vexaccess,
                      cpuid          = vexcpuid)
 
     def getInsnList(self):
@@ -661,6 +719,8 @@ class UdOpcodeTables(object):
             global_implicitRegUse = []
             global_implicitRegDef = []
 
+            global_flags = "____________"
+
             for node in insnNode.childNodes:
                 if node.localName == 'vendor':
                     vendor = node.firstChild.data.split()
@@ -688,7 +748,7 @@ class UdOpcodeTables(object):
                     for node in node.childNodes:
                         if not node.localName:
                             continue
-                        if node.localName in ('pfx', 'opc', 'opr', 'vendor', 'cpuid'):
+                        if node.localName in ('pfx', 'opc', 'opr', 'access', 'vendor', 'cpuid'):
                             insnDef[node.localName] = node.firstChild.data.split()
                         elif node.localName == 'eflags':
                             eflags = node.firstChild.data
@@ -712,5 +772,6 @@ class UdOpcodeTables(object):
                                   'opcodes'        : insnDef.get('opc', []),
                                   'operands'       : insnDef.get('opr', []),
                                   'vendor'         : insnDef.get('vendor', vendor),
+                                  'access'         : insnDef.get('access', []),
                                   'cpuid'          : insnDef.get('cpuid', cpuid)})
         return insns
