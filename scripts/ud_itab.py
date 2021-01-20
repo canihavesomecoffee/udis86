@@ -302,7 +302,7 @@ class UdItabGenerator:
             if table.limit() > 255:
                 print(f"error: invalid table limit: {table.limit()} \n")
             fh.write(f'    /* {self.get_table_index(table):03d} */ '
-                     f'{{ {self.get_table_name(table)}, {table.label()}, "{table.meta()}" {table.limit()} }},\n')
+                     f'{{ {self.get_table_name(table)}, {table.label()}, "{table.meta()}", {table.limit()} }},\n')
         fh.write("};")
 
     def gen_insn_table(self, fh: TextIO):
@@ -369,9 +369,9 @@ class UdItabGenerator:
             implicit_uses += "UD_NONE"
             implicit_defs += "UD_NONE"
 
-            fh.write("  /* %04d */ { UD_I%s %s, %s, %s, %s, %s, {%s}, {%s}, {%s} },\n" % (
-                self.get_insn_index(insn), insn.mnemonic + ',', opr, op1_access, op2_access, acc, pfx, eflags,
-                implicit_uses, implicit_defs
+            fh.write("  /* %04d */ { UD_I%s, %s, %s, %s, %s, { {%s} }, {%s}, {%s}, %s },\n" % (
+                self.get_insn_index(insn), insn.mnemonic, opr, op1_access, op2_access, pfx, eflags,
+                implicit_uses, implicit_defs, acc
             ))
         fh.write("};\n")
 

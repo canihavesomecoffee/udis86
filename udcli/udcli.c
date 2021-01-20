@@ -115,17 +115,18 @@ void print_flag(enum ud_eflag_state flag)
 
 void print_eflags(const struct ud_eflags *state)
 {
-  printf("of:"); print_flag(state->of_state); printf(" ");
-  printf("sf:"); print_flag(state->sf_state); printf(" ");
-  printf("zf:"); print_flag(state->zf_state); printf(" ");
-  printf("af:"); print_flag(state->af_state); printf(" ");
-  printf("pf:"); print_flag(state->pf_state); printf(" ");
-  printf("cf:"); print_flag(state->cf_state); printf(" ");
-  printf("tf:"); print_flag(state->tf_state); printf(" ");
-  printf("if:"); print_flag(state->if_state); printf(" ");
-  printf("df:"); print_flag(state->df_state); printf(" ");
-  printf("nt:"); print_flag(state->nt_state); printf(" ");
-  printf("rf:"); print_flag(state->rf_state);
+  printf("of:"); print_flag(state->flag[UD_FLAG_OF]); printf(" ");
+  printf("sf:"); print_flag(state->flag[UD_FLAG_SF]); printf(" ");
+  printf("zf:"); print_flag(state->flag[UD_FLAG_ZF]); printf(" ");
+  printf("af:"); print_flag(state->flag[UD_FLAG_AF]); printf(" ");
+  printf("pf:"); print_flag(state->flag[UD_FLAG_PF]); printf(" ");
+  printf("cf:"); print_flag(state->flag[UD_FLAG_CF]); printf(" ");
+  printf("tf:"); print_flag(state->flag[UD_FLAG_TF]); printf(" ");
+  printf("if:"); print_flag(state->flag[UD_FLAG_IF]); printf(" ");
+  printf("df:"); print_flag(state->flag[UD_FLAG_DF]); printf(" ");
+  printf("nf:"); print_flag(state->flag[UD_FLAG_NF]); printf(" ");
+  printf("rf:"); print_flag(state->flag[UD_FLAG_RF]); printf(" ");
+  printf("ac:"); print_flag(state->flag[UD_FLAG_AC]);
 }
 
 int main(int argc, char **argv)
