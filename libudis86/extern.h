@@ -111,6 +111,10 @@ extern LIBUDIS86_DLLEXTERN void ud_set_sym_resolver(struct ud *u,
                                                         uint64_t addr,
                                                         int64_t *offset));
 
+extern LIBUDIS86_DLLEXTERN void ud_clear_insn(register struct ud* u);
+
+extern LIBUDIS86_DLLEXTERN int ud_decode_prefixes(struct ud *u);
+
 /* ========================================================================== */
 
 #ifdef __cplusplus

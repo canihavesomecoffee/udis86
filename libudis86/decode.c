@@ -227,8 +227,7 @@ eff_adr_mode(int dis_mode, int pfx_adr)
  *
  *  Extracts instruction prefixes.
  */
-static int 
-decode_prefixes(struct ud *u)
+int ud_decode_prefixes(struct ud *u)
 {
   int done = 0;
   uint8_t curr = 0, last = 0;
@@ -2211,8 +2210,7 @@ decode_operands(struct ud* u)
  * clear_insn() - clear instruction structure
  * -----------------------------------------------------------------------------
  */
-static void
-clear_insn(register struct ud* u)
+void ud_clear_insn(register struct ud* u)
 {
   u->error           = 0;
   u->pfx_seg         = 0;
@@ -2729,15 +2727,15 @@ ud_decode(struct ud *u)
 {
   int i = 0;
   inp_start(u);
-  clear_insn(u);
+  ud_clear_insn(u);
   u->le = &ud_lookup_table_list[0];
-  u->error = decode_prefixes(u) == -1 || 
+  u->error = ud_decode_prefixes(u) == -1 ||
              decode_opcode(u)   == -1 ||
              u->error;
   /* Handle decode error. */
   if (u->error) {
     /* clear out the decode data. */
-	clear_insn(u);
+	ud_clear_insn(u);
     /* mark the sequence of bytes as invalid. */
     u->itab_entry = &ud_itab[0]; /* entry 0 is invalid */
     u->mnemonic = u->itab_entry->mnemonic;
