@@ -179,6 +179,7 @@ enum ud_eflag_state
   UD_FLAG_PRIOR
 };
 
+// TODO: seems to be duplicated with the enum below.
 #define UD_ACCESS_NONE		0
 #define UD_ACCESS_READ		(1 << 1)
 #define UD_ACCESS_WRITE		(1 << 2)
