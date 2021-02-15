@@ -2,4 +2,4 @@ cmake_minimum_required(VERSION 3.12)
 project(udcli LANGUAGES C)
 
 add_executable(udcli udcli.c)
-target_link_libraries(udcli libudis86)
+target_link_libraries(udcli udis86)
