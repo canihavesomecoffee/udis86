@@ -1,10 +1,10 @@
 # Udis86
 
 Udis86 is a disassembler for the x86 and x86-64 class of instruction set
-architectures. It consists of a C library called libudis86 which
-provides a clean and simple interface to decode a stream of raw binary
-data, and to inspect the disassembled instructions in a structured
-manner.
+architectures. It consists of a C library called `libudis86` which
+provides a clean and simple interface to decode and inspect a stream of 
+raw binary data as disassembled instructions in a structured manner, and
+a command line tool called `udcli` that incorporates the library.
 
 ## libudis86
 
@@ -65,22 +65,22 @@ a Texinfo file which can be installed by invoking "make install-info".
 You can also find an online html version of the documentation available
 at http://udis86.sourceforge.net/.
 
-
 ## Building
 
-You need autotools if building from sources cloned form version control
+You need autotools if building from sources cloned from version control
 system, or if you need to regenerate the build system. The wrapper
 script 'autogen.sh' is provided that'll generate the build system.
 
+Alternatively you can use cmake to build the library.
 
 ## License
 
 Udis86 is distributed under the terms of the 2-clause "Simplified BSD
-License".  A copy of the license is included with the source in LICENSE.
+License". A copy of the license is included with the source in LICENSE.
 
 ## Author and contributors
 
-Udis86 was originally written by Vivek Thampi (vivek.mt@gmail.com).
+Udis86 was originally written by [Vivek Thampi](https://github.com/vmt/).
 
 Further fixes and additions have been merged from these forks:
 - https://github.com/relyze-ltd/udis86
