@@ -9207,192 +9207,192 @@
 
     <instruction>
         <mnemonic>seto</mnemonic>
-        <first_operand_access>W</first_operand_access>
+        <first_operand_access>R</first_operand_access>
         <eflags source='scrape'>T___________</eflags>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 90</opc>
-            <opr>Eb</opr>
+            <opr>Mb</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
 
     <instruction>
         <mnemonic>setno</mnemonic>
-        <first_operand_access>W</first_operand_access>
+        <first_operand_access>R</first_operand_access>
         <eflags source='scrape'>T___________</eflags>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 91</opc>
-            <opr>Eb</opr>
+            <opr>Mb</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
 
     <instruction>
         <mnemonic>setb</mnemonic>
-        <first_operand_access>W</first_operand_access>
+        <first_operand_access>R</first_operand_access>
         <eflags source='scrape'>_____T______</eflags>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 92</opc>
-            <opr>Eb</opr>
+            <opr>Mb</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
 
     <instruction>
         <mnemonic>setae</mnemonic>
-        <first_operand_access>W</first_operand_access>
+        <first_operand_access>R</first_operand_access>
         <eflags source='scrape'>_____T______</eflags>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 93</opc>
-            <opr>Eb</opr>
+            <opr>Mb</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
 
     <instruction>
         <mnemonic>sete</mnemonic>
-        <first_operand_access>W</first_operand_access>
+        <first_operand_access>R</first_operand_access>
         <eflags source='manual'>__T_________</eflags>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 94</opc>
-            <opr>Eb</opr>
+            <opr>EM</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
 
     <instruction>
         <mnemonic>setne</mnemonic>
-        <first_operand_access>W</first_operand_access>
+        <first_operand_access>R</first_operand_access>
         <eflags source='manual'>__T_________</eflags>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 95</opc>
-            <opr>Eb</opr>
+            <opr>Mb</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
 
     <instruction>
         <mnemonic>setbe</mnemonic>
-        <first_operand_access>W</first_operand_access>
+        <first_operand_access>R</first_operand_access>
         <eflags source='scrape'>__T__T______</eflags>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 96</opc>
-            <opr>Eb</opr>
+            <opr>Mb</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
 
     <instruction>
         <mnemonic>seta</mnemonic>
-        <first_operand_access>W</first_operand_access>
+        <first_operand_access>R</first_operand_access>
         <eflags source='scrape'>__T__T______</eflags>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 97</opc>
-            <opr>Eb</opr>
+            <opr>Mb</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
 
     <instruction>
         <mnemonic>sets</mnemonic>
-        <first_operand_access>W</first_operand_access>
+        <first_operand_access>R</first_operand_access>
         <eflags source='scrape'>_T__________</eflags>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 98</opc>
-            <opr>Eb</opr>
+            <opr>Mb</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
 
     <instruction>
         <mnemonic>setns</mnemonic>
-        <first_operand_access>W</first_operand_access>
+        <first_operand_access>R</first_operand_access>
         <eflags source='scrape'>_T__________</eflags>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 99</opc>
-            <opr>Eb</opr>
+            <opr>Mb</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
 
     <instruction>
         <mnemonic>setp</mnemonic>
-        <first_operand_access>W</first_operand_access>
+        <first_operand_access>R</first_operand_access>
         <eflags source='scrape'>____T_______</eflags>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 9a</opc>
-            <opr>Eb</opr>
+            <opr>Mb</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
 
     <instruction>
         <mnemonic>setnp</mnemonic>
-        <first_operand_access>W</first_operand_access>
+        <first_operand_access>R</first_operand_access>
         <eflags source='scrape'>____T_______</eflags>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 9b</opc>
-            <opr>Eb</opr>
+            <opr>Mb</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
 
     <instruction>
         <mnemonic>setl</mnemonic>
-        <first_operand_access>W</first_operand_access>
+        <first_operand_access>R</first_operand_access>
         <eflags source='scrape'>TT__________</eflags>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 9c</opc>
-            <opr>Eb</opr>
+            <opr>Mb</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
 
     <instruction>
         <mnemonic>setge</mnemonic>
-        <first_operand_access>W</first_operand_access>
+        <first_operand_access>R</first_operand_access>
         <eflags source='scrape'>TT__________</eflags>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 9d</opc>
-            <opr>Eb</opr>
+            <opr>Mb</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
 
     <instruction>
         <mnemonic>setle</mnemonic>
-        <first_operand_access>W</first_operand_access>
+        <first_operand_access>R</first_operand_access>
         <eflags source='scrape'>TTT_________</eflags>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 9e</opc>
-            <opr>Eb</opr>
+            <opr>Mb</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
 
     <instruction>
         <mnemonic>setg</mnemonic>
-        <first_operand_access>W</first_operand_access>
+        <first_operand_access>R</first_operand_access>
         <eflags source='scrape'>TTT_________</eflags>
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 9f</opc>
-            <opr>Eb</opr>
+            <opr>Mb</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
