@@ -9260,7 +9260,7 @@
         <def>
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 94</opc>
-            <opr>EM</opr>
+            <opr>Mb</opr>
 			<access source='manual'>R</access>
         </def>
     </instruction>
