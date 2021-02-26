@@ -9213,7 +9213,7 @@
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 90</opc>
             <opr>Eb</opr>
-			<access source='manual'>R</access>
+			<access source='manual'>W</access>
         </def>
     </instruction>
 
@@ -9225,7 +9225,7 @@
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 91</opc>
             <opr>Eb</opr>
-			<access source='manual'>R</access>
+			<access source='manual'>W</access>
         </def>
     </instruction>
 
@@ -9237,7 +9237,7 @@
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 92</opc>
             <opr>Eb</opr>
-			<access source='manual'>R</access>
+			<access source='manual'>W</access>
         </def>
     </instruction>
 
@@ -9249,7 +9249,7 @@
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 93</opc>
             <opr>Eb</opr>
-			<access source='manual'>R</access>
+			<access source='manual'>W</access>
         </def>
     </instruction>
 
@@ -9261,7 +9261,7 @@
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 94</opc>
             <opr>Eb</opr>
-			<access source='manual'>R</access>
+			<access source='manual'>W</access>
         </def>
     </instruction>
 
@@ -9273,7 +9273,7 @@
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 95</opc>
             <opr>Eb</opr>
-			<access source='manual'>R</access>
+			<access source='manual'>W</access>
         </def>
     </instruction>
 
@@ -9285,7 +9285,7 @@
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 96</opc>
             <opr>Eb</opr>
-			<access source='manual'>R</access>
+			<access source='manual'>W</access>
         </def>
     </instruction>
 
@@ -9297,7 +9297,7 @@
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 97</opc>
             <opr>Eb</opr>
-			<access source='manual'>R</access>
+			<access source='manual'>W</access>
         </def>
     </instruction>
 
@@ -9309,7 +9309,7 @@
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 98</opc>
             <opr>Eb</opr>
-			<access source='manual'>R</access>
+			<access source='manual'>W</access>
         </def>
     </instruction>
 
@@ -9321,7 +9321,7 @@
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 99</opc>
             <opr>Eb</opr>
-			<access source='manual'>R</access>
+			<access source='manual'>W</access>
         </def>
     </instruction>
 
@@ -9333,7 +9333,7 @@
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 9a</opc>
             <opr>Eb</opr>
-			<access source='manual'>R</access>
+			<access source='manual'>W</access>
         </def>
     </instruction>
 
@@ -9345,7 +9345,7 @@
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 9b</opc>
             <opr>Eb</opr>
-			<access source='manual'>R</access>
+			<access source='manual'>W</access>
         </def>
     </instruction>
 
@@ -9357,7 +9357,7 @@
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 9c</opc>
             <opr>Eb</opr>
-			<access source='manual'>R</access>
+			<access source='manual'>W</access>
         </def>
     </instruction>
 
@@ -9369,7 +9369,7 @@
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 9d</opc>
             <opr>Eb</opr>
-			<access source='manual'>R</access>
+			<access source='manual'>W</access>
         </def>
     </instruction>
 
@@ -9381,7 +9381,7 @@
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 9e</opc>
             <opr>Eb</opr>
-			<access source='manual'>R</access>
+			<access source='manual'>W</access>
         </def>
     </instruction>
 
@@ -9393,7 +9393,7 @@
             <pfx>aso rexr rexx rexb</pfx>
             <opc>0f 9f</opc>
             <opr>Eb</opr>
-			<access source='manual'>R</access>
+			<access source='manual'>W</access>
         </def>
     </instruction>
 
